@@ -4,7 +4,7 @@ import chess
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget
 
-from chess_widgets.board import BoardWidget
+from chess_widgets import BoardWidget
 
 
 class RecordingDemo(QMainWindow):

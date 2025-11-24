@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Breaking Change**: Renamed project from `lichess-board` to `chess-widgets`.
 - **Breaking Change**: Renamed package from `lichess_board` to `chess_widgets`.
-- **Breaking Change**: Renamed `ChessBoardWidget` to `BoardWidget` (imported from `chess_widgets.board`).
+- **Breaking Change**: Renamed `ChessBoardWidget` to `BoardWidget` (imported directly from `chess_widgets`).
 
 ## [0.4.0] - 2025-11-22
 

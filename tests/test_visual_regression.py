@@ -6,7 +6,7 @@ import chess
 from PySide6.QtCore import QPointF, QSize, Qt
 from PySide6.QtGui import QImage, QMouseEvent
 
-from chess_widgets.board import BoardWidget
+from chess_widgets import BoardWidget
 
 if TYPE_CHECKING:
     from pytestqt.qtbot import QtBot

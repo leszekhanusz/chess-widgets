@@ -38,7 +38,7 @@ Here is a simple example of how to use the `BoardWidget` in a PySide6 applicatio
 import sys
 import chess
 from PySide6.QtWidgets import QApplication, QMainWindow
-from chess_widgets.board import BoardWidget
+from chess_widgets import BoardWidget
 
 class MainWindow(QMainWindow):
     def __init__(self):

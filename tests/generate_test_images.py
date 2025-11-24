@@ -9,7 +9,7 @@ from PySide6.QtCore import QPointF, QSize, Qt  # noqa: E402
 from PySide6.QtGui import QImage, QMouseEvent  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
-from chess_widgets.board import BoardWidget  # noqa: E402
+from chess_widgets import BoardWidget  # noqa: E402
 
 
 def save_snapshot(widget: BoardWidget, filename: str) -> None:

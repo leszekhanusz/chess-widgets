@@ -1,7 +1,7 @@
 import chess
 from pytestqt.qtbot import QtBot
 
-from chess_widgets.board import BoardWidget
+from chess_widgets import BoardWidget
 
 
 def test_chess960_kingside_king_on_d1(qtbot: QtBot) -> None:

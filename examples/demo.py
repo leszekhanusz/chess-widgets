@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from chess_widgets.board import BoardWidget
+from chess_widgets import BoardWidget
 
 
 class MainWindow(QMainWindow):

@@ -3,7 +3,7 @@ from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QMouseEvent
 from pytestqt.qtbot import QtBot
 
-from chess_widgets.board import BoardWidget
+from chess_widgets import BoardWidget
 
 
 def test_undo_empty_board(qtbot: QtBot) -> None:

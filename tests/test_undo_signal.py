@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import chess
 from PySide6.QtWidgets import QApplication
 
-from chess_widgets.board import BoardWidget
+from chess_widgets import BoardWidget
 
 # Ensure QApplication exists
 app = QApplication.instance() or QApplication(sys.argv)
