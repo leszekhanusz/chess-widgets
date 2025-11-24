@@ -4,6 +4,7 @@ dynamic = ["version"]
 description = "A PySide6 chess board widget"
 readme = "README.md"
 authors = [{name = "Leszek", email = "leszek.hanusz@gmail.com"}]
+license = {text = "MIT"}
 dependencies = [
     "PySide6>=6.10.1,<7",
     "python-chess>=1.999,<2",
@@ -16,7 +17,6 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 
