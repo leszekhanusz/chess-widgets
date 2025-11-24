@@ -388,7 +388,7 @@ class BoardWidget(QWidget):
         self.move_played.emit(move, move_info)
         self.update()
 
-    def undo_move(self, animate: bool = True) -> None:
+    def undo_move(self, *, animate: bool = True) -> None:
         # Clear selection to remove legal move highlights
         self._clear_selection()
 
