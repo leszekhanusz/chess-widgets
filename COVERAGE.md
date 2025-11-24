@@ -36,7 +36,7 @@ Three types of coverage reports are generated:
 
 ### Coverage Requirements
 
-- **Minimum Coverage**: 80% (configured in `pyproject.toml`)
+- **Minimum Coverage**: 100% (configured in `pyproject.toml`)
 - Tests will fail if coverage drops below this threshold
 - You can adjust this in `[tool.pytest.ini_options]` section
 
@@ -48,7 +48,7 @@ The `.github/workflows/test.yml` workflow:
 1. Runs tests with coverage on all supported Python versions (3.10-3.14)
 2. Generates coverage reports in XML format
 3. Uploads coverage to Codecov (only for Python 3.12 to avoid duplicates)
-4. Fails the build if coverage is below 80%
+4. Fails the build if coverage is below 100%
 
 ### Setting Up Codecov on GitHub
 
@@ -105,8 +105,8 @@ Codecov automatically comments on PRs with:
 
 ### 4. Status Checks
 The workflow will:
-- ✅ Pass if coverage meets the 80% threshold
-- ❌ Fail if coverage drops below 80%
+- ✅ Pass if coverage meets the 100% threshold
+- ❌ Fail if coverage drops below 100%
 - ⚠️ Warn if coverage decreases by more than 1%
 
 ## Configuration Files
@@ -119,7 +119,7 @@ addopts = [
     "--cov-report=html",
     "--cov-report=term-missing",
     "--cov-report=xml",
-    "--cov-fail-under=80",  # Minimum coverage threshold
+    "--cov-fail-under=100",  # Minimum coverage threshold
 ]
 
 [tool.coverage.run]
@@ -139,8 +139,8 @@ exclude_lines = [
 ```
 
 ### codecov.yml
-- **Project coverage target**: 80%
-- **Patch coverage target**: 80% (for new code in PRs)
+- **Project coverage target**: 100%
+- **Patch coverage target**: 100% (for new code in PRs)
 - **Threshold**: 1% (allowed decrease)
 
 ## Troubleshooting
@@ -169,7 +169,7 @@ If you prefer not to use Codecov:
 
 1. Remove the "Upload coverage to Codecov" step from `.github/workflows/test.yml`
 2. Coverage will still be measured and enforced locally and in CI
-3. The build will fail if coverage drops below 80%
+3. The build will fail if coverage drops below 100%
 4. You won't get PR comments or historical tracking
 
 ## Customization
@@ -226,5 +226,5 @@ def debug_only():  # pragma: no cover
 
 ✅ **Local setup**: Ready to use with `make coverage`  
 ⚠️ **GitHub setup**: Requires Codecov token configuration  
-📊 **Threshold**: 80% minimum coverage enforced  
+📊 **Threshold**: 100% minimum coverage enforced
 🔄 **Automatic**: Runs on every push and pull request  
