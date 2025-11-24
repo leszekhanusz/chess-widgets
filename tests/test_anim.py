@@ -1,11 +1,11 @@
 import chess
 from pytestqt.qtbot import QtBot
 
-from lichess_board import ChessBoardWidget
+from chess_widgets.board import BoardWidget
 
 
 def test_animation(qtbot: QtBot) -> None:
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
 

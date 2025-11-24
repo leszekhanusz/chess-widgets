@@ -1,6 +1,6 @@
-# Contributing to lichess-board
+# Contributing to chess-widgets
 
-Thank you for your interest in contributing to `lichess-board`! We welcome contributions from the community to help make this project better.
+Thank you for your interest in contributing to `chess-widgets`! We welcome contributions from the community to help make this project better.
 
 ## Getting Started
 

@@ -3,12 +3,12 @@ from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QMouseEvent
 from pytestqt.qtbot import QtBot
 
-from lichess_board import ChessBoardWidget
+from chess_widgets.board import BoardWidget
 
 
 def test_undo_empty_board(qtbot: QtBot) -> None:
     """Test that undoing on an empty board does nothing."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -27,7 +27,7 @@ def test_undo_empty_board(qtbot: QtBot) -> None:
 
 def test_undo_empty_board_with_animation(qtbot: QtBot) -> None:
     """Test that undoing on an empty board with animation does nothing."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -48,7 +48,7 @@ def test_undo_empty_board_with_animation(qtbot: QtBot) -> None:
 
 def test_pos_to_square_outside_board(qtbot: QtBot) -> None:
     """Test that _pos_to_square returns None for positions outside the board."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(400, 400)
     widget.show()
@@ -88,7 +88,7 @@ def test_pos_to_square_outside_board(qtbot: QtBot) -> None:
 
 def test_pos_to_square_edge_cases(qtbot: QtBot) -> None:
     """Test edge cases in _pos_to_square coordinate calculations."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(400, 400)
     widget.show()
@@ -116,7 +116,7 @@ def test_pos_to_square_edge_cases(qtbot: QtBot) -> None:
 
 def test_click_outside_then_outside_again(qtbot: QtBot) -> None:
     """Test clicking outside board multiple times."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(400, 400)
     widget.show()
@@ -176,7 +176,7 @@ def test_click_outside_then_outside_again(qtbot: QtBot) -> None:
 
 def test_mouse_release_outside_after_invalid_drag(qtbot: QtBot) -> None:
     """Test releasing mouse outside board after dragging."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(400, 400)
     widget.show()

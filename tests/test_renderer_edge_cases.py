@@ -3,13 +3,13 @@ from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QImage, QPainter
 from pytestqt.qtbot import QtBot
 
-from lichess_board import ChessBoardWidget
-from lichess_board.renderer import Renderer
+from chess_widgets import BoardWidget
+from chess_widgets.renderer import Renderer
 
 
 def test_legal_moves_with_hide_square(qtbot: QtBot) -> None:
     """Test that draw_legal_moves skips rendering the hide_square parameter."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(400, 400)
     widget.show()
@@ -49,7 +49,7 @@ def test_legal_moves_with_hide_square(qtbot: QtBot) -> None:
 
 def test_highlight_last_move_with_none(qtbot: QtBot) -> None:
     """Test that highlight_last_move handles None/falsy move gracefully."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(400, 400)
     widget.show()
@@ -76,7 +76,7 @@ def test_highlight_last_move_with_none(qtbot: QtBot) -> None:
 
 def test_empty_board_no_moves(qtbot: QtBot) -> None:
     """Test rendering when board has no move history."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -103,7 +103,7 @@ def test_empty_board_no_moves(qtbot: QtBot) -> None:
 
 def test_hide_square_with_capture_move(qtbot: QtBot) -> None:
     """Test hide_square parameter with capture move."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(400, 400)
     widget.show()

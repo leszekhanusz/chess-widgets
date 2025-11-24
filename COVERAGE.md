@@ -63,12 +63,12 @@ To enable automatic coverage verification on GitHub:
 #### Step 2: Add Your Repository
 
 1. In Codecov dashboard, click "Add new repository"
-2. Find and select `leszekhanusz/lichess-board`
+2. Find and select `leszekhanusz/chess-widgets`
 3. Codecov will generate a **CODECOV_TOKEN** for your repository
 
 #### Step 3: Add the Token to GitHub Secrets
 
-1. Go to your GitHub repository: `https://github.com/leszekhanusz/lichess-board`
+1. Go to your GitHub repository: `https://github.com/leszekhanusz/chess-widgets`
 2. Click **Settings** → **Secrets and variables** → **Actions**
 3. Click **New repository secret**
 4. Name: `CODECOV_TOKEN`
@@ -89,7 +89,7 @@ Once configured, Codecov provides:
 ### 1. Coverage Badge
 Add this to your README.md:
 ```markdown
-[![codecov](https://codecov.io/gh/leszekhanusz/lichess-board/branch/main/graph/badge.svg)](https://codecov.io/gh/leszekhanusz/lichess-board)
+[![codecov](https://codecov.io/gh/leszekhanusz/chess-widgets/branch/main/graph/badge.svg)](https://codecov.io/gh/leszekhanusz/chess-widgets)
 ```
 
 ### 2. Pull Request Comments
@@ -115,7 +115,7 @@ The workflow will:
 ```toml
 [tool.pytest.ini_options]
 addopts = [
-    "--cov=src/lichess_board",
+    "--cov=src/chess_widgets",
     "--cov-report=html",
     "--cov-report=term-missing",
     "--cov-report=xml",
@@ -123,7 +123,7 @@ addopts = [
 ]
 
 [tool.coverage.run]
-source = ["src/lichess_board"]
+source = ["src/chess_widgets"]
 omit = ["*/tests/*", "*/__pycache__/*", "*/.venv/*"]
 
 [tool.coverage.report]

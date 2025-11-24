@@ -1,8 +1,8 @@
-# Python Chess Board Widget
+# Python Chess Widgets
 
-[![Tests](https://github.com/leszekhanusz/lichess-board/actions/workflows/test.yml/badge.svg)](https://github.com/leszekhanusz/lichess-board/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/leszekhanusz/lichess-board/branch/main/graph/badge.svg)](https://codecov.io/gh/leszekhanusz/lichess-board)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/lichess-board.svg)](https://pypi.org/project/lichess-board/)
+[![Tests](https://github.com/leszekhanusz/chess-widgets/actions/workflows/test.yml/badge.svg)](https://github.com/leszekhanusz/chess-widgets/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/leszekhanusz/chess-widgets/branch/main/graph/badge.svg)](https://codecov.io/gh/leszekhanusz/chess-widgets)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/chess-widgets.svg)](https://pypi.org/project/chess-widgets/)
 
 A modern, feature-rich chess board widget for PySide6 applications, designed to mimic the visual style and user experience of Lichess. It is built on top of the powerful [python-chess](https://github.com/niklasf/python-chess) library.
 
@@ -27,18 +27,18 @@ A modern, feature-rich chess board widget for PySide6 applications, designed to 
 You can install the package from PyPI:
 
 ```bash
-pip install lichess-board
+pip install chess-widgets
 ```
 
 ## Usage
 
-Here is a simple example of how to use the `ChessBoardWidget` in a PySide6 application:
+Here is a simple example of how to use the `BoardWidget` in a PySide6 application:
 
 ```python
 import sys
 import chess
 from PySide6.QtWidgets import QApplication, QMainWindow
-from lichess_board import ChessBoardWidget
+from chess_widgets.board import BoardWidget
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
         self.resize(600, 600)
 
         # Create the widget
-        self.board_widget = ChessBoardWidget()
+        self.board_widget = BoardWidget()
         self.setCentralWidget(self.board_widget)
 
         # Connect to the move signal

@@ -1,5 +1,5 @@
 [project]
-name = "lichess-board"
+name = "chess-widgets"
 dynamic = ["version"]
 description = "A PySide6 chess board widget"
 readme = "README.md"
@@ -21,8 +21,8 @@ classifiers = [
 ]
 
 [project.urls]
-Repository = "https://github.com/leszekhanusz/lichess-board"
-Issues = "https://github.com/leszekhanusz/lichess-board/issues"
+Repository = "https://github.com/leszekhanusz/chess-widgets"
+Issues = "https://github.com/leszekhanusz/chess-widgets/issues"
 
 [project.optional-dependencies]
 dev = [
@@ -40,10 +40,10 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
-version = {attr = "lichess_board.__version__.__version__"}
+version = {attr = "chess_widgets.__version__.__version__"}
 
 [tool.setuptools.package-data]
-lichess_board = ["py.typed", "assets/*.svg"]
+chess_widgets = ["py.typed", "assets/*.svg"]
 
 [tool.black]
 line-length = 88
@@ -65,7 +65,7 @@ addopts = [
 ]
 
 [tool.coverage.run]
-source = ["src/lichess_board"]
+source = ["src/chess_widgets"]
 omit = [
     "*/tests/*",
     "*/__pycache__/*",

@@ -5,7 +5,7 @@ from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QMouseEvent
 from pytestqt.qtbot import QtBot
 
-from lichess_board import ChessBoardWidget
+from chess_widgets.board import BoardWidget
 
 
 def test_mouse_press_outside_board_with_selection(qtbot: QtBot) -> None:
@@ -13,7 +13,7 @@ def test_mouse_press_outside_board_with_selection(qtbot: QtBot) -> None:
     Test clicking outside board when a piece is already selected.
     This targets lines 206-207: the return statement after clearing selection.
     """
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(400, 400)
     widget.show()
@@ -64,7 +64,7 @@ def test_pos_to_square_with_extreme_negative_coordinates(qtbot: QtBot) -> None:
     Test _pos_to_square with coordinates that would produce negative col/row.
     This targets line 309: the boundary check for col/row out of bounds.
     """
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(400, 400)
     widget.show()
@@ -99,7 +99,7 @@ def test_pos_to_square_boundary_precision(qtbot: QtBot) -> None:
     Test _pos_to_square at exact boundaries to ensure line 309 is covered.
     The check: if col < 0 or col > 7 or row < 0 or row > 7: return None
     """
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(400, 400)
     widget.show()

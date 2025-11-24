@@ -6,7 +6,7 @@ import chess
 from PySide6.QtCore import QPointF, QSize, Qt
 from PySide6.QtGui import QImage, QMouseEvent
 
-from lichess_board import ChessBoardWidget
+from chess_widgets.board import BoardWidget
 
 if TYPE_CHECKING:
     from pytestqt.qtbot import QtBot
@@ -16,7 +16,7 @@ SIZE = QSize(400, 400)
 
 
 def compare_images(
-    widget: ChessBoardWidget, reference_filename: str, tolerance: float = 5.0
+    widget: BoardWidget, reference_filename: str, tolerance: float = 5.0
 ) -> None:
     """Render widget and compare with reference image using RMS difference."""
     # Render widget
@@ -77,7 +77,7 @@ def compare_images(
 
 
 def test_initial_board(qtbot: "QtBot") -> None:
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(SIZE)
     widget.show()
@@ -87,7 +87,7 @@ def test_initial_board(qtbot: "QtBot") -> None:
 
 
 def test_initial_board_flipped(qtbot: "QtBot") -> None:
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(SIZE)
     widget.set_flipped(True)
@@ -100,7 +100,7 @@ def test_initial_board_flipped(qtbot: "QtBot") -> None:
 def test_italian_opening_board(qtbot: "QtBot") -> None:
     italian_fen = "r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4"
     board = chess.Board(italian_fen)
-    widget = ChessBoardWidget(board=board)
+    widget = BoardWidget(board=board)
     qtbot.addWidget(widget)
     widget.resize(SIZE)
     widget.show()
@@ -110,7 +110,7 @@ def test_italian_opening_board(qtbot: "QtBot") -> None:
 
 
 def test_italian_opening_moves(qtbot: "QtBot") -> None:
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(SIZE)
     widget.show()
@@ -124,7 +124,7 @@ def test_italian_opening_moves(qtbot: "QtBot") -> None:
 
 
 def test_white_pawn_selected(qtbot: "QtBot") -> None:
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(SIZE)
     widget.show()
@@ -154,7 +154,7 @@ def test_white_pawn_selected(qtbot: "QtBot") -> None:
 
 
 def test_scandinavian_capture(qtbot: "QtBot") -> None:
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(SIZE)
     widget.show()

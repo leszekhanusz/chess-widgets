@@ -9,10 +9,10 @@ from PySide6.QtCore import QPointF, QSize, Qt  # noqa: E402
 from PySide6.QtGui import QImage, QMouseEvent  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
-from lichess_board import ChessBoardWidget  # noqa: E402
+from chess_widgets.board import BoardWidget  # noqa: E402
 
 
-def save_snapshot(widget: ChessBoardWidget, filename: str) -> None:
+def save_snapshot(widget: BoardWidget, filename: str) -> None:
     """Render widget to an image and save it."""
     # Ensure directory exists
     assets_dir = os.path.join(os.path.dirname(__file__), "assets", "images")
@@ -46,7 +46,7 @@ def main() -> None:
     SIZE = QSize(400, 400)
 
     # 1. Initial board
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     widget.resize(SIZE)
     # Force layout/paint
     widget.show()
@@ -55,7 +55,7 @@ def main() -> None:
     widget.close()
 
     # 2. Initial board flipped
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     widget.resize(SIZE)
     widget.set_flipped(True)
     widget.show()
@@ -67,7 +67,7 @@ def main() -> None:
     # 1. e4 e5 2. Nf3 Nc6 3. Bc4
     italian_fen = "r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4"
     board = chess.Board(italian_fen)
-    widget = ChessBoardWidget(board=board)
+    widget = BoardWidget(board=board)
     widget.resize(SIZE)
     widget.show()
     app.processEvents()
@@ -75,7 +75,7 @@ def main() -> None:
     widget.close()
 
     # 4. Italian opening (from moves)
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     widget.resize(SIZE)
     widget.show()
     moves = ["e2e4", "e7e5", "g1f3", "b8c6", "f1c4", "f8c5"]
@@ -86,7 +86,7 @@ def main() -> None:
     widget.close()
 
     # 5. White pawn selected (legal moves)
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     widget.resize(SIZE)
     widget.show()
     # Select e2 pawn (square e2 is 12)
@@ -128,7 +128,7 @@ def main() -> None:
 
     # 6. Scandinavian opening (capture)
     # 1. e4 d5
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     widget.resize(SIZE)
     widget.show()
     widget.play_move(chess.Move.from_uci("e2e4"), animate=False)

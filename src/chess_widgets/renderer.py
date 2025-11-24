@@ -37,7 +37,7 @@ class Renderer:
         ]
 
         # Use importlib.resources to access package assets
-        assets_path = files("lichess_board").joinpath("assets")
+        assets_path = files("chess_widgets").joinpath("assets")
 
         for p in pieces:
             svg_file = assets_path.joinpath(f"{p}.svg")
@@ -183,7 +183,7 @@ class Renderer:
                 )
 
     def highlight_last_move(
-        self, painter: QPainter, rect: QRectF, move: chess.Move, flipped: bool
+        self, painter: QPainter, rect: QRectF, move: Optional[chess.Move], flipped: bool
     ) -> None:
         if not move:
             return

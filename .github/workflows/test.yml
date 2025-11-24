@@ -44,7 +44,7 @@ jobs:
       env:
         QT_QPA_PLATFORM: offscreen
       run: |
-        pytest tests/ -v --cov=src/lichess_board --cov-report=term-missing --cov-report=xml --cov-fail-under=100
+        pytest tests/ -v --cov=src/chess_widgets --cov-report=term-missing --cov-report=xml --cov-fail-under=100
 
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.12'

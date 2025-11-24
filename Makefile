@@ -47,12 +47,12 @@ test:
 
 coverage:
 	@echo "Running tests with coverage..."
-	pytest tests/ -v --cov=src/lichess_board --cov-report=term-missing --cov-report=xml --cov-fail-under=100
+	pytest tests/ -v --cov=src/chess_widgets --cov-report=term-missing --cov-report=xml --cov-fail-under=100
 	@echo "\n✓ Coverage report complete!"
 
 coverage-html:
 	@echo "Running tests with coverage and generating HTML report..."
-	pytest tests/ -v --cov=src/lichess_board --cov-report=html --cov-report=term-missing --cov-report=xml --cov-fail-under=100
+	pytest tests/ -v --cov=src/chess_widgets --cov-report=html --cov-report=term-missing --cov-report=xml --cov-fail-under=100
 	@echo "\nOpening coverage report in browser..."
 	xdg-open htmlcov/index.html 2>/dev/null || open htmlcov/index.html 2>/dev/null || echo "Please open htmlcov/index.html manually"
 	@echo "\n✓ Coverage report complete!"

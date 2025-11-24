@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Breaking Change**: Renamed project from `lichess-board` to `chess-widgets`.
+- **Breaking Change**: Renamed package from `lichess_board` to `chess_widgets`.
+- **Breaking Change**: Renamed `ChessBoardWidget` to `BoardWidget` (imported from `chess_widgets.board`).
+
 ## [0.4.0] - 2025-11-22
 
 ### Added

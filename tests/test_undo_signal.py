@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import chess
 from PySide6.QtWidgets import QApplication
 
-from lichess_board import ChessBoardWidget
+from chess_widgets.board import BoardWidget
 
 # Ensure QApplication exists
 app = QApplication.instance() or QApplication(sys.argv)
@@ -14,7 +14,7 @@ app = QApplication.instance() or QApplication(sys.argv)
 class TestUndoSignal(unittest.TestCase):
     def test_move_undone_signal(self) -> None:
         board = chess.Board()
-        widget = ChessBoardWidget(board=board)
+        widget = BoardWidget(board=board)
 
         # Mock the signal receiver
         mock_receiver = MagicMock()

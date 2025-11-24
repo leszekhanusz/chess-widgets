@@ -1,7 +1,7 @@
 import chess
 from pytestqt.qtbot import QtBot
 
-from lichess_board import ChessBoardWidget
+from chess_widgets.board import BoardWidget
 
 
 def test_chess960_kingside_king_on_d1(qtbot: QtBot) -> None:
@@ -10,7 +10,7 @@ def test_chess960_kingside_king_on_d1(qtbot: QtBot) -> None:
     In this position, castling kingside means king goes d1->g1,
     and rook h1->f1. This is different from standard chess.
     """
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -55,7 +55,7 @@ def test_chess960_queenside_king_on_f1(qtbot: QtBot) -> None:
 
     King goes f1->c1, rook a1->d1. This tests non-standard positions.
     """
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -94,7 +94,7 @@ def test_chess960_queenside_king_on_f1(qtbot: QtBot) -> None:
 
 def test_chess960_black_kingside_king_on_c8(qtbot: QtBot) -> None:
     """Test Chess960 black kingside castling with king on c8, rook on h8."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -136,7 +136,7 @@ def test_chess960_rook_already_on_final_square(qtbot: QtBot) -> None:
     King on e1, rook on f1. Kingside castling: king e1->g1, rook stays f1.
     This is an edge case in Chess960.
     """
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -169,7 +169,7 @@ def test_chess960_rook_already_on_final_square(qtbot: QtBot) -> None:
 
 def test_chess960_undo_non_standard_castling(qtbot: QtBot) -> None:
     """Test undoing Chess960 castling with non-standard piece positions."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)

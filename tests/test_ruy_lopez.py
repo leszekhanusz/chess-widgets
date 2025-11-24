@@ -2,10 +2,10 @@ import chess
 from PySide6.QtCore import QPointF, Qt
 from pytestqt.qtbot import QtBot
 
-from lichess_board import ChessBoardWidget
+from chess_widgets.board import BoardWidget
 
 
-def get_square_center(widget: ChessBoardWidget, square: int) -> QPointF:
+def get_square_center(widget: BoardWidget, square: int) -> QPointF:
     """Helper to get the center of a square in widget coordinates."""
     rect = widget._get_board_rect()
     square_size = rect.width() / 8
@@ -37,7 +37,7 @@ def test_ruy_lopez_interactive(qtbot: QtBot) -> None:
     4. Nc6 (Click-Click)
     5. Bb5 (Drag)
     """
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -126,7 +126,7 @@ def test_ruy_lopez_interactive_flipped(qtbot: QtBot) -> None:
     4. Nc6 (Click-Click)
     5. Bb5 (Drag)
     """
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     widget.set_flipped(True)

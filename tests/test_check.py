@@ -3,12 +3,12 @@ import sys
 import chess
 from pytestqt.qtbot import QtBot
 
-from lichess_board import ChessBoardWidget
+from chess_widgets.board import BoardWidget
 
 
 def test_check_indicator(qtbot: QtBot) -> None:
     """Test that check indicator is displayed when king is in check."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     widget.resize(600, 600)
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     from PySide6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     widget.show()
     widget.resize(600, 600)
 

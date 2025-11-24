@@ -1,12 +1,12 @@
 import chess
 from pytestqt.qtbot import QtBot
 
-from lichess_board import ChessBoardWidget
+from chess_widgets.board import BoardWidget
 
 
 def test_white_kingside_castle(qtbot: QtBot) -> None:
     """Test white kingside castling (O-O)."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
 
@@ -54,7 +54,7 @@ def test_white_kingside_castle(qtbot: QtBot) -> None:
 
 def test_white_queenside_castle(qtbot: QtBot) -> None:
     """Test white queenside castling (O-O-O)."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
 
@@ -104,7 +104,7 @@ def test_white_queenside_castle(qtbot: QtBot) -> None:
 
 def test_black_kingside_castle(qtbot: QtBot) -> None:
     """Test black kingside castling (O-O)."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
 
@@ -153,7 +153,7 @@ def test_black_kingside_castle(qtbot: QtBot) -> None:
 
 def test_black_queenside_castle(qtbot: QtBot) -> None:
     """Test black queenside castling (O-O-O)."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
 

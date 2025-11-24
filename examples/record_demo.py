@@ -4,7 +4,7 @@ import chess
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget
 
-from lichess_board import ChessBoardWidget
+from chess_widgets.board import BoardWidget
 
 
 class RecordingDemo(QMainWindow):
@@ -24,7 +24,7 @@ class RecordingDemo(QMainWindow):
         layout.addWidget(label)
 
         # Board
-        self.board_widget = ChessBoardWidget()
+        self.board_widget = BoardWidget()
         layout.addWidget(self.board_widget)
 
         self.board_widget.move_played.connect(self.on_move_played)

@@ -3,7 +3,7 @@ import os
 import chess
 import chess.svg
 
-ASSETS_DIR = "src/lichess_board/assets"
+ASSETS_DIR = "src/chess_widgets/assets"
 os.makedirs(ASSETS_DIR, exist_ok=True)
 
 pieces = {

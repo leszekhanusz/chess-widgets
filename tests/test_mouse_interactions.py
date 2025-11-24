@@ -3,10 +3,10 @@ from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QMouseEvent
 from pytestqt.qtbot import QtBot
 
-from lichess_board import ChessBoardWidget
+from chess_widgets.board import BoardWidget
 
 
-def get_square_center(widget: ChessBoardWidget, square: int) -> QPointF:
+def get_square_center(widget: BoardWidget, square: int) -> QPointF:
     """Helper to get the center of a square in widget coordinates."""
     rect = widget._get_board_rect()
     square_size = rect.width() / 8
@@ -28,7 +28,7 @@ def get_square_center(widget: ChessBoardWidget, square: int) -> QPointF:
 
 def test_right_click_ignored(qtbot: QtBot) -> None:
     """Test that right-click doesn't select pieces or trigger moves."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -48,7 +48,7 @@ def test_right_click_ignored(qtbot: QtBot) -> None:
 
 def test_click_outside_board_clears_selection(qtbot: QtBot) -> None:
     """Test that clicking outside the board clears the current selection."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(400, 400)
     widget.show()
@@ -75,7 +75,7 @@ def test_click_outside_board_clears_selection(qtbot: QtBot) -> None:
 
 def test_click_opponent_piece_deselects(qtbot: QtBot) -> None:
     """Test clicking opponent piece when nothing selected clears selection."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -95,7 +95,7 @@ def test_click_opponent_piece_deselects(qtbot: QtBot) -> None:
 
 def test_click_empty_square_deselects(qtbot: QtBot) -> None:
     """Test that clicking an empty square when nothing is selected does nothing."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -115,7 +115,7 @@ def test_click_empty_square_deselects(qtbot: QtBot) -> None:
 
 def test_mouse_move_without_dragging(qtbot: QtBot) -> None:
     """Test that moving mouse without dragging updates hover state."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -141,7 +141,7 @@ def test_mouse_move_without_dragging(qtbot: QtBot) -> None:
 
 def test_hover_highlight_legal_move(qtbot: QtBot) -> None:
     """Test that hovering over a legal move target shows highlight."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(400, 400)
     widget.show()
@@ -184,7 +184,7 @@ def test_hover_highlight_legal_move(qtbot: QtBot) -> None:
 
 def test_drag_drop_on_invalid_square(qtbot: QtBot) -> None:
     """Test dragging a piece and dropping on an invalid target square."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(400, 400)
     widget.show()
@@ -213,7 +213,7 @@ def test_drag_drop_on_invalid_square(qtbot: QtBot) -> None:
 
 def test_drag_drop_outside_board(qtbot: QtBot) -> None:
     """Test dragging a piece and releasing outside the board area."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.resize(400, 400)
     widget.show()

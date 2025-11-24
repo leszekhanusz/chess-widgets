@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from lichess_board import ChessBoardWidget
+from chess_widgets.board import BoardWidget
 
 
 class MainWindow(QMainWindow):
@@ -92,7 +92,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(flip_widget)
 
         # Board
-        self.board_widget = ChessBoardWidget()
+        self.board_widget = BoardWidget()
         layout.addWidget(self.board_widget)
 
         # Navigation Bar

@@ -1,12 +1,12 @@
 import chess
 from pytestqt.qtbot import QtBot
 
-from lichess_board import ChessBoardWidget
+from chess_widgets.board import BoardWidget
 
 
 def test_play_move_interrupts_animation(qtbot: QtBot) -> None:
     """Test that playing a new move interrupts a running animation."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -38,7 +38,7 @@ def test_play_move_interrupts_animation(qtbot: QtBot) -> None:
 
 def test_undo_interrupts_animation(qtbot: QtBot) -> None:
     """Test that undoing interrupts a running animation."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -72,7 +72,7 @@ def test_undo_interrupts_animation(qtbot: QtBot) -> None:
 
 def test_undo_regular_move_animated(qtbot: QtBot) -> None:
     """Test undoing a regular (non-castling) move with animation enabled."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -110,7 +110,7 @@ def test_undo_regular_move_animated(qtbot: QtBot) -> None:
 
 def test_undo_capture_move_animated(qtbot: QtBot) -> None:
     """Test undoing a capture move with animation."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)
@@ -140,7 +140,7 @@ def test_undo_capture_move_animated(qtbot: QtBot) -> None:
 
 def test_multiple_move_interruptions(qtbot: QtBot) -> None:
     """Test multiple rapid move interruptions."""
-    widget = ChessBoardWidget()
+    widget = BoardWidget()
     qtbot.addWidget(widget)
     widget.show()
     qtbot.waitExposed(widget)

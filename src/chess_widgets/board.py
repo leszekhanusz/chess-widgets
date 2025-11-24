@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QWidget
 from .renderer import Renderer
 
 
-class ChessBoardWidget(QWidget):
+class BoardWidget(QWidget):
     """
     A PySide6 widget that displays a chess board and allows interaction.
 
