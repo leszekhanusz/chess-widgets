@@ -6,7 +6,7 @@
 
 A modern, feature-rich chess board widget for PySide6 applications, designed to mimic the visual style and user experience of Lichess. It is built on top of the powerful [python-chess](https://github.com/niklasf/python-chess) library.
 
-![Fool's Mate Demo](examples/assets/fools_mate.gif)
+![Fool's Mate Demo](https://raw.githubusercontent.com/leszekhanusz/chess-widgets/main/examples/assets/fools_mate.gif)
 
 ## Features
 
@@ -70,9 +70,9 @@ if __name__ == "__main__":
     sys.exit(app.exec())
 ```
 
-A more complex example with move history navigation, board flipping, and random moves played for the opposite color can be found in the [examples/demo.py](examples/demo.py) file.
+A more complex example with move history navigation, board flipping, and random moves played for the opposite color can be found in the [examples/demo.py](https://github.com/leszekhanusz/chess-widgets/blob/main/examples/demo.py) file.
 
-![Demo](examples/assets/demo.png)
+![Demo](https://raw.githubusercontent.com/leszekhanusz/chess-widgets/main/examples/assets/demo.png)
 
 
 ### API Overview
@@ -86,8 +86,8 @@ A more complex example with move history navigation, board flipping, and random 
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to set up your development environment and submit changes.
+We welcome contributions! Please see [CONTRIBUTING.md](https://github.com/leszekhanusz/chess-widgets/blob/main/CONTRIBUTING.md) for details on how to set up your development environment and submit changes.
 
 ## License
 
-[MIT License](LICENSE)
+[MIT License](https://github.com/leszekhanusz/chess-widgets/blob/main/LICENSE)
