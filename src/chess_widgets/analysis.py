@@ -16,14 +16,16 @@ from PySide6.QtWidgets import (
 from chess_widgets.flow_layout import FlowLayout
 
 # Styling constants based on Lichess light mode
-COLOR_BG = "#FFFFFF"
+COLOR_BG = "#F7F6F5"
 COLOR_BG_ROW = "#FFFFFF"
-COLOR_BG_ROW_HOVER = "#E8F2FF"  # Light blueish hover
-COLOR_TEXT = "#333333"
+COLOR_BG_ROW_HOVER = "#E4E4E4"
+COLOR_TEXT = "#4D4D4D"
 COLOR_TEXT_DIM = "#888888"
 COLOR_TEXT_NUMBER = "#A0A0A0"
 COLOR_HIGHLIGHT = "#1b78d0"
-COLOR_BORDER = "#E0E0E0"
+# COLOR_BORDER_LIGHT = "#4D4D4D1F"
+COLOR_BORDER_LIGHT = "#E2E1E0"
+COLOR_BORDER = "#D9D9D9"
 COLOR_VARIATION_BAR = "#E0E0E0"
 
 STYLE_SCROLL_AREA = f"""
@@ -35,19 +37,15 @@ STYLE_SCROLL_AREA = f"""
         background-color: {COLOR_BG};
         color: {COLOR_TEXT};
         font-family: "Noto Sans", Sans-Serif;
-        font-size: 14px;
+        font-size: 13px;
     }}
 """
 
 STYLE_MOVE_ROW = f"""
-    .MoveRowWidget {{
-        background-color: {COLOR_BG};
-    }}
-    .MoveRowWidget:hover {{
-        background-color: {COLOR_BG_ROW_HOVER};
-    }}
-    QLabel {{
-        padding: 2px 5px;
+    QFrame{{
+        background-color: {COLOR_BG_ROW};
+        line-height: 2.07em;
+        font-family: "Noto Sans", sans-serif;
     }}
 """
 
@@ -59,7 +57,7 @@ STYLE_MOVE_LABEL = f"""
     }}
     QLabel:hover {{
         background-color: {COLOR_BG_ROW_HOVER};
-        color: #ffffff;
+        color: #1F1F1F;
     }}
 """
 
@@ -71,9 +69,10 @@ STYLE_MOVE_NUMBER = f"""
 
 STYLE_ANNOTATION = f"""
     color: {COLOR_TEXT};
-    background-color: {COLOR_BG_ROW};
-    padding: 4px 8px;
-    font-style: italic;
+    background-color: {COLOR_BG};
+    padding: 1px 1px;
+    border-bottom: 1px solid {COLOR_BORDER_LIGHT};
+    border-top: 1px solid {COLOR_BORDER_LIGHT};
 """
 
 
@@ -133,12 +132,6 @@ class MoveRowWidget(QFrame):
 
         layout.addWidget(self.lbl_white, 43)
 
-        # Separator
-        line1 = QFrame()
-        line1.setFrameShape(QFrame.Shape.VLine)
-        line1.setStyleSheet(f"color: {COLOR_BORDER};")
-        layout.addWidget(line1)
-
         # Black Move (43.5%)
         self.lbl_black: QLabel
         if black_node:
@@ -153,13 +146,7 @@ class MoveRowWidget(QFrame):
         layout.addWidget(self.lbl_black, 43)
 
         # Styling
-        self.setStyleSheet(
-            f"""
-            MoveRowWidget {{
-                border-bottom: 1px solid {COLOR_BORDER};
-            }}
-        """
-        )
+        self.setStyleSheet(STYLE_MOVE_ROW)
 
     def set_black_move(self, node: chess.pgn.ChildNode) -> None:
         # Replace the placeholder black label
