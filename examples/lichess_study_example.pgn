@@ -1,0 +1,22 @@
+[Event "How to Win Winning Positions: The 'No Problems' Win"]
+[Date "2025.11.13"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "How to Win Winning Positions"]
+[ChapterName "The 'No Problems' Win"]
+[ChapterURL "https://lichess.org/study/I9YbUAV8/ZCgn4YLw"]
+[Annotator "https://lichess.org/@/TheHeartofChess"]
+[FEN "2r5/5pk1/4p1p1/3p3p/3P3P/4PNP1/3R1PK1/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2025.11.13"]
+[UTCTime "15:10:48"]
+[ChapterMode "gamebook"]
+
+{ Some of you might be saying, wait, why are we starting with this position? White is simply winning!
+
+That's totally true! In the game of chess, there are many different positions that are winning. Most of them have some things in common and with this example we are setting the bar - extra piece for us and NO COUNTERPLAY from the opponent. If you wish to see more complex positions, keep exploring through the study! } { [%csl Gf3] }
+1... Rc7 { "Show me, don't tell me". Many moves win but what's THE winning plan for White? } 2. Ne5 { Correct - using the extra piece to put pressure on the opponent's position. } (2. Ra2 { Also fine as long as you wanted to activate your extra piece. } { [%csl Gf3][%cal Gf3e5,Ge5d3,Gd3c5] }) (2. Ng5 { The knight cannot coordinate with the rook from this square so try going to e5 instead :) }) 2... f6 { Where are we headed with the knight? } { [%csl Ge5] } 3. Nd3 { The knight has a beautiful outpost on c5. } { [%csl Bc5][%cal Bd3c5,Bd4c5] } 3... Kf7 { Lastly, to ensure a smooth victory, we bring in the rook! } 4. Ra2 { [%csl Re6][%cal Ga2a6,Gd3c5,Ra6e6] } (4. Rb2 { Also fine }) 4... Re7 { [%cal Gd3c5] } 5. Nc5 Rc7 { [%cal Ga2a6] } 6. Ra6 { We find a weakness in the opponent's position and attack it } { [%csl Re6][%cal Ga6e6,Gc5e6] } 6... Re7 { [%cal Gg2f3] } 7. Kf3 { As in all endgames, the king gets active going towards the center! Black is out of moves! } 7... Re8 { [%cal Ga6a7] } (7... e5 { [%cal Rd6d5] } 8. Rd6 { [%csl Rd5][%cal Rd6d5] }) (7... f5 8. Kf4 { [%cal Bf4e5,Bf4g5] } 8... Kf6 9. Rxe6+ Rxe6 10. Nxe6 Kxe6 11. Kg5 { [%csl Rg6][%cal Rg5g6] } 11... Kf7 12. Kh6 { Simply winning } { [%cal Gh6h7,Gh7h8,Gh8g8,Gg8g7] } (12. f3 Kg7 13. Kf4 Kf6 14. e4 { Also, simply winning } { [%csl Gd4] })) (7... g5 8. hxg5 fxg5 9. Nd3 { Rerouting the knight is not bad } { [%cal Gd3e5] } (9. g4 h4 { [%csl Gg5][%cal Gf2f4] } 10. Kg2 $18 { [%csl Gg5][%cal Gf2f4,Gf4g5] })) 8. Ra7+ Kg8 { [%cal Gc5d7] } (8... Re7 9. Rxe7+ Kxe7 10. e4) 9. Nd7 $18 { Again, this first example is to demonstrate how simple it is winning a position where we have an extra piece and the opponent has NO COUNTERPLAY. Next, let's look into the trade down principle. } { [%csl Rf6][%cal Rd7f6] } *
+
+
