@@ -138,7 +138,8 @@ class MoveRowWidget(QFrame):
             self.lbl_black = ClickableLabel(black_node.san(), black_node)
             self.lbl_black.clicked.connect(self.move_clicked.emit)
         else:
-            self.lbl_black = QLabel("")
+            self.lbl_black = QLabel("...")
+            self.lbl_black.setStyleSheet(f"color: {COLOR_TEXT_DIM}; padding: 2px 5px;")
         self.lbl_black.setAlignment(
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
         )
