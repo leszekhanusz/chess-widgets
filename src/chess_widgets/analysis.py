@@ -3,13 +3,14 @@ from typing import Optional, cast
 
 import chess
 import chess.pgn
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QCursor, QMouseEvent
+from PySide6.QtCore import QEvent, QObject, Qt, Signal
+from PySide6.QtGui import QCursor, QEnterEvent, QMouseEvent, QResizeEvent
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
     QScrollArea,
+    QScrollBar,
     QVBoxLayout,
     QWidget,
 )
@@ -39,6 +40,26 @@ STYLE_SCROLL_AREA = f"""
         color: {COLOR_TEXT};
         font-family: "Noto Sans", Sans-Serif;
         font-size: 13px;
+    }}
+    /* Scrollbar styling - initially invisible */
+    QScrollBar:vertical {{
+        background-color: transparent;
+        width: 8px;
+        margin: 0px;
+    }}
+    QScrollBar::handle:vertical {{
+        background-color: transparent;
+        border-radius: 4px;
+        min-height: 50px;
+    }}
+    QScrollBar::add-line:vertical {{
+        height: 0px;
+    }}
+    QScrollBar::sub-line:vertical {{
+        height: 0px;
+    }}
+    QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+        background: none;
     }}
 """
 
@@ -362,7 +383,28 @@ class AnalysisBoardWidget(QScrollArea):
         super().__init__(parent)
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setStyleSheet(STYLE_SCROLL_AREA)
+
+        # Track hover state for scrollbar visibility
+        self.is_hovered = False
+        self.scrollbar_hovered = False
+
+        # Create overlay scrollbar
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.overlay_scrollbar = QScrollBar(Qt.Orientation.Vertical, self)
+        self.overlay_scrollbar.hide()
+
+        # Sync overlay scrollbar with native scrollbar
+        native_sb = self.verticalScrollBar()
+        native_sb.valueChanged.connect(self.overlay_scrollbar.setValue)
+        native_sb.rangeChanged.connect(self.overlay_scrollbar.setRange)
+        self.overlay_scrollbar.valueChanged.connect(native_sb.setValue)
+
+        # Initial state sync
+        self.overlay_scrollbar.setRange(native_sb.minimum(), native_sb.maximum())
+        self.overlay_scrollbar.setValue(native_sb.value())
+
+        # Install event filter on overlay scrollbar to detect hover
+        self.overlay_scrollbar.installEventFilter(self)
 
         self.container = QWidget()
         self.main_layout = QVBoxLayout(self.container)
@@ -375,6 +417,10 @@ class AnalysisBoardWidget(QScrollArea):
         # Track active node and node-to-label mapping
         self.active_node: Optional[chess.pgn.ChildNode] = None
         self.node_to_label: dict[chess.pgn.ChildNode, MoveLabel] = {}
+
+        # Initialize style
+        self.setStyleSheet(STYLE_SCROLL_AREA)
+        self._update_scrollbar_style()
 
         if game:
             self.process_game(game)
@@ -489,3 +535,86 @@ class AnalysisBoardWidget(QScrollArea):
         if node in self.node_to_label:
             self.node_to_label[node].set_active(True)
             self.active_node = node
+
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        """Position the overlay scrollbar."""
+        super().resizeEvent(event)
+        if hasattr(self, "overlay_scrollbar"):
+            sb_width = 12  # Max width
+            self.overlay_scrollbar.setGeometry(
+                self.width() - sb_width, 0, sb_width, self.height()
+            )
+
+    def enterEvent(self, event: QEnterEvent) -> None:
+        """Show scrollbar when mouse enters the widget."""
+        self.is_hovered = True
+        self._update_scrollbar_style()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event: QEvent) -> None:
+        """Hide scrollbar when mouse leaves the widget."""
+        self.is_hovered = False
+        self.scrollbar_hovered = False
+        self._update_scrollbar_style()
+        super().leaveEvent(event)
+
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+        """Track hover state on the scrollbar itself."""
+        if hasattr(self, "overlay_scrollbar") and obj == self.overlay_scrollbar:
+            if event.type() == QEvent.Type.Enter:
+                self.scrollbar_hovered = True
+                self._update_scrollbar_style()
+            elif event.type() == QEvent.Type.Leave:
+                self.scrollbar_hovered = False
+                self._update_scrollbar_style()
+        return bool(super().eventFilter(obj, event))
+
+    def _update_scrollbar_style(self) -> None:
+        """Update scrollbar appearance based on hover state."""
+        if not hasattr(self, "overlay_scrollbar"):
+            return
+
+        # Determine visibility and style
+        if self.scrollbar_hovered:
+            # Full width handle when hovering scrollbar
+            handle_margin = 0
+            handle_width = 12
+            color = "rgba(128, 128, 128, 0.6)"
+            self.overlay_scrollbar.show()
+        elif self.is_hovered:
+            # Thinner handle (via margins) when hovering widget
+            handle_margin = 2  # (12 - 8) / 2
+            handle_width = 8
+            color = "rgba(128, 128, 128, 0.4)"
+            self.overlay_scrollbar.show()
+        else:
+            # Invisible
+            handle_margin = 2
+            handle_width = 8
+            color = "transparent"
+            self.overlay_scrollbar.hide()
+
+        self.overlay_scrollbar.setStyleSheet(
+            f"""
+            QScrollBar:vertical {{
+                background-color: transparent;
+                width: 12px;
+                margin: 0px;
+            }}
+            QScrollBar::handle:vertical {{
+                background-color: {color};
+                border-radius: {handle_width // 2}px;
+                min-height: 50px;
+                margin: 0px {handle_margin}px 0px {handle_margin}px;
+            }}
+            QScrollBar::add-line:vertical {{
+                height: 0px;
+            }}
+            QScrollBar::sub-line:vertical {{
+                height: 0px;
+            }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                background: none;
+            }}
+        """
+        )
