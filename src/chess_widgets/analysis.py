@@ -45,7 +45,6 @@ STYLE_SCROLL_AREA = f"""
 STYLE_MOVE_ROW = f"""
     QFrame{{
         background-color: {COLOR_BG_ROW};
-        line-height: 2.07em;
         font-family: "Noto Sans", sans-serif;
     }}
 """
@@ -53,8 +52,9 @@ STYLE_MOVE_ROW = f"""
 STYLE_MOVE_LABEL = f"""
     QLabel {{
         color: {COLOR_TEXT};
-        padding: 2px 4px;
+        padding: 4px 4px;
         border-radius: 3px;
+        font-size: 15px;
     }}
     QLabel:hover {{
         background-color: {COLOR_BG_ROW_HOVER};
@@ -66,6 +66,7 @@ STYLE_MOVE_NUMBER = f"""
     color: {COLOR_TEXT_NUMBER};
     background-color: #F0F0F0;
     border-right: 1px solid {COLOR_BORDER};
+    padding: 4px 0px;
 """
 
 STYLE_ANNOTATION = f"""
