@@ -4,7 +4,7 @@ from typing import Optional, cast
 import chess
 import chess.pgn
 from PySide6.QtCore import QEvent, QObject, Qt, Signal
-from PySide6.QtGui import QCursor, QEnterEvent, QMouseEvent, QResizeEvent
+from PySide6.QtGui import QCursor, QEnterEvent, QKeyEvent, QMouseEvent, QResizeEvent
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -384,6 +384,9 @@ class AnalysisBoardWidget(QScrollArea):
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
+        # Make the frame focusable
+        self.setFocusPolicy(Qt.StrongFocus)
+
         # Track hover state for scrollbar visibility
         self.is_hovered = False
         self.scrollbar_hovered = False
@@ -554,6 +557,23 @@ class AnalysisBoardWidget(QScrollArea):
                 scrollbar.minimum(), min(target_scroll, scrollbar.maximum())
             )
             scrollbar.setValue(target_scroll)
+
+    def prev_move(self) -> None:
+        if self.active_node and self.active_node.parent:
+            self.set_active_node(self.active_node.parent)
+
+    def next_move(self) -> None:
+        if self.active_node and len(self.active_node.variations) > 0:
+            self.set_active_node(self.active_node.variations[0])
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.key() == Qt.Key_Left:
+            self.prev_move()
+        elif event.key() == Qt.Key_Right:
+            self.next_move()
+        else:
+            # Pass other keys to the base class
+            super().keyPressEvent(event)
 
     def resizeEvent(self, event: QResizeEvent) -> None:
         """Position the overlay scrollbar."""
