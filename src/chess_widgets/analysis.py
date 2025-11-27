@@ -77,6 +77,18 @@ STYLE_ANNOTATION = f"""
 """
 
 
+STYLE_MOVE_LABEL_ACTIVE = """
+    QLabel {
+        background-color: #3d8cd7 !important;
+        color: #ffffff !important;
+    }
+    QLabel:hover {
+        background-color: #3d8cd7 !important;
+        color: #ffffff !important;
+    }
+"""
+
+
 def _filter_comment(text: str) -> str:
     """Remove [%...] annotations from comment text."""
     # Remove [%...] blocks
@@ -86,19 +98,39 @@ def _filter_comment(text: str) -> str:
     return text
 
 
-class ClickableLabel(QLabel):
+class MoveLabel(QLabel):
     clicked = Signal(object)  # Emits the node
 
     def __init__(
-        self, text: str, node: chess.pgn.ChildNode, parent: Optional[QWidget] = None
+        self,
+        text: str,
+        node: chess.pgn.ChildNode,
+        base_style: str,
+        parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(text, parent)
         self.node = node
+        self.base_style = base_style
+        self.is_active = False
+        self.setStyleSheet(self.base_style)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.setStyleSheet(STYLE_MOVE_LABEL)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
-        self.clicked.emit(self.node)
+        if not self.is_active:
+            self.clicked.emit(self.node)
+
+    def set_active(self, active: bool) -> None:
+        self.is_active = active
+        if active:
+            # Append active style to base style (or replace relevant parts)
+            # Using a simple concatenation or specific override
+            # We need to ensure the active style overrides the base style properties
+            # The simplest way is to append the active style string
+            self.setStyleSheet(self.base_style + STYLE_MOVE_LABEL_ACTIVE)
+            self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
+        else:
+            self.setStyleSheet(self.base_style)
+            self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
 
 class MoveRowWidget(QFrame):
@@ -131,7 +163,7 @@ class MoveRowWidget(QFrame):
         # White Move (43.5%)
         self.lbl_white: QLabel
         if white_node:
-            self.lbl_white = ClickableLabel(white_node.san(), white_node)
+            self.lbl_white = MoveLabel(white_node.san(), white_node, STYLE_MOVE_LABEL)
             self.lbl_white.clicked.connect(self.move_clicked.emit)
         else:
             self.lbl_white = QLabel("...")
@@ -145,7 +177,7 @@ class MoveRowWidget(QFrame):
         # Black Move (43.5%)
         self.lbl_black: QLabel
         if black_node:
-            self.lbl_black = ClickableLabel(black_node.san(), black_node)
+            self.lbl_black = MoveLabel(black_node.san(), black_node, STYLE_MOVE_LABEL)
             self.lbl_black.clicked.connect(self.move_clicked.emit)
         else:
             self.lbl_black = QLabel("...")
@@ -166,9 +198,17 @@ class MoveRowWidget(QFrame):
         self.lbl_black.deleteLater()
 
         self.black_node = node
-        self.lbl_black = ClickableLabel(node.san(), node)
+        self.lbl_black = MoveLabel(node.san(), node, STYLE_MOVE_LABEL)
         self.lbl_black.clicked.connect(self.move_clicked.emit)
         layout.addWidget(self.lbl_black, 43)
+
+    def get_move_labels(self) -> list[MoveLabel]:
+        labels = []
+        if isinstance(self.lbl_white, MoveLabel):
+            labels.append(self.lbl_white)
+        if isinstance(self.lbl_black, MoveLabel):
+            labels.append(self.lbl_black)
+        return labels
 
 
 class InlineMovesWidget(QWidget):
@@ -216,9 +256,9 @@ class InlineMovesWidget(QWidget):
                 )
                 move_text = f"{move_number}{move_text}"
 
-            lbl = ClickableLabel(move_text, current)
-            lbl.clicked.connect(self.move_clicked.emit)
-            lbl.setStyleSheet(
+            lbl = MoveLabel(
+                move_text,
+                current,
                 f"""
                 QLabel {{
                     color: {COLOR_TEXT};
@@ -229,8 +269,9 @@ class InlineMovesWidget(QWidget):
                 QLabel:hover {{
                     background-color: {COLOR_BG_ROW_HOVER};
                 }}
-            """
+            """,
             )
+            lbl.clicked.connect(self.move_clicked.emit)
             self.content_layout.addWidget(lbl)
 
             # Add comment if any
@@ -280,9 +321,9 @@ class InlineMovesWidget(QWidget):
                 )
                 move_text = f"{move_number}{move_text}"
 
-            lbl = ClickableLabel(move_text, current)
-            lbl.clicked.connect(self.move_clicked.emit)
-            lbl.setStyleSheet(
+            lbl = MoveLabel(
+                move_text,
+                current,
                 f"""
                 QLabel {{
                     color: {COLOR_TEXT_DIM};
@@ -292,14 +333,23 @@ class InlineMovesWidget(QWidget):
                 QLabel:hover {{
                     background-color: {COLOR_BG_ROW_HOVER};
                 }}
-                """
-            )  # Nested variations often dimmer
+                """,
+            )
+            lbl.clicked.connect(self.move_clicked.emit)
             self.content_layout.addWidget(lbl)
 
             if current.variations:
                 current = current.variations[0]
             else:
                 current = None
+
+    def get_move_labels(self) -> list[MoveLabel]:
+        labels = []
+        # Iterate over the layout items to find MoveLabels
+        for child in self.content_widget.children():
+            if isinstance(child, MoveLabel):
+                labels.append(child)
+        return labels
 
 
 class AnalysisBoardWidget(QScrollArea):
@@ -320,6 +370,10 @@ class AnalysisBoardWidget(QScrollArea):
         self.main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         self.setWidget(self.container)
+
+        # Track active node and node-to-label mapping
+        self.active_node: Optional[chess.pgn.ChildNode] = None
+        self.node_to_label: dict[chess.pgn.ChildNode, MoveLabel] = {}
 
         if game:
             self.process_game(game)
@@ -357,6 +411,9 @@ class AnalysisBoardWidget(QScrollArea):
                 )
                 current_row_widget.move_clicked.connect(self.move_clicked.emit)
                 self.main_layout.addWidget(current_row_widget)
+                # Register move labels
+                for lbl in current_row_widget.get_move_labels():
+                    self.node_to_label[lbl.node] = lbl
 
                 # If there are variations for this White move (siblings of main_next)
                 if variations:
@@ -365,6 +422,9 @@ class AnalysisBoardWidget(QScrollArea):
                         var_widget = InlineMovesWidget(var_node)
                         var_widget.move_clicked.connect(self.move_clicked.emit)
                         self.main_layout.addWidget(var_widget)
+                        # Register move labels
+                        for lbl in var_widget.get_move_labels():
+                            self.node_to_label[lbl.node] = lbl
 
                 # If comment
                 if main_next.comment:
@@ -378,6 +438,10 @@ class AnalysisBoardWidget(QScrollArea):
                 # Try to append to existing row
                 if current_row_widget and current_row_widget.black_node is None:
                     current_row_widget.set_black_move(main_next)
+                    # Register the newly added black move label
+                    for lbl in current_row_widget.get_move_labels():
+                        if lbl.node == main_next:
+                            self.node_to_label[lbl.node] = lbl
                 else:
                     # Create new row with empty white
                     current_row_widget = MoveRowWidget(
@@ -385,6 +449,9 @@ class AnalysisBoardWidget(QScrollArea):
                     )
                     current_row_widget.move_clicked.connect(self.move_clicked.emit)
                     self.main_layout.addWidget(current_row_widget)
+                    # Register move labels
+                    for lbl in current_row_widget.get_move_labels():
+                        self.node_to_label[lbl.node] = lbl
 
                 # If there are variations for this Black move
                 if variations:
@@ -392,6 +459,9 @@ class AnalysisBoardWidget(QScrollArea):
                         var_widget = InlineMovesWidget(var_node)
                         var_widget.move_clicked.connect(self.move_clicked.emit)
                         self.main_layout.addWidget(var_widget)
+                        # Register move labels
+                        for lbl in var_widget.get_move_labels():
+                            self.node_to_label[lbl.node] = lbl
 
                 # If comment
                 if main_next.comment:
@@ -407,3 +477,14 @@ class AnalysisBoardWidget(QScrollArea):
         lbl.setWordWrap(True)
         lbl.setStyleSheet(STYLE_ANNOTATION)
         self.main_layout.addWidget(lbl)
+
+    def set_active_node(self, node: chess.pgn.ChildNode) -> None:
+        """Set the active node and update the visual highlighting."""
+        # Deactivate previous active node
+        if self.active_node and self.active_node in self.node_to_label:
+            self.node_to_label[self.active_node].set_active(False)
+
+        # Activate new node
+        if node in self.node_to_label:
+            self.node_to_label[node].set_active(True)
+            self.active_node = node

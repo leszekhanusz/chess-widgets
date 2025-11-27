@@ -28,8 +28,12 @@ def main() -> None:
     analysis_widget = AnalysisBoardWidget(game)
     layout.addWidget(analysis_widget)
 
-    # Connect signal to print clicked move
-    analysis_widget.move_clicked.connect(lambda node: print(f"Clicked: {node.san()}"))
+    # Connect signal to set active node
+    def on_move_clicked(node: chess.pgn.ChildNode) -> None:
+        analysis_widget.set_active_node(node)
+        print(f"Clicked: {node.san()}")
+
+    analysis_widget.move_clicked.connect(on_move_clicked)
 
     window.show()
     sys.exit(app.exec())
