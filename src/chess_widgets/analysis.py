@@ -202,14 +202,19 @@ class InlineMovesWidget(QWidget):
         self.populate(start_node)
 
     def populate(self, node: chess.pgn.ChildNode) -> None:
-        current: chess.pgn.ChildNode = node
+        current: Optional[chess.pgn.ChildNode] = node
         while current:
             # Add move
             move_text = current.san()
             if current.parent and current.parent.board().turn == chess.WHITE:
                 move_text = f"{current.parent.board().fullmove_number}. {move_text}"
             else:
-                move_text = f"{current.parent.board().fullmove_number}... {move_text}"
+                move_number = (
+                    str(current.parent.board().fullmove_number) + "... "
+                    if node is current
+                    else ""
+                )
+                move_text = f"{move_number}{move_text}"
 
             lbl = ClickableLabel(move_text, current)
             lbl.clicked.connect(self.move_clicked.emit)
@@ -258,29 +263,43 @@ class InlineMovesWidget(QWidget):
             if current.variations:
                 current = current.variations[0]
             else:
-                current = None  # type: ignore
+                current = None
 
     def populate_inline(self, node: chess.pgn.ChildNode) -> None:
         # Helper to add moves to the SAME layout for nested variations
-        current: chess.pgn.ChildNode = node
+        current: Optional[chess.pgn.ChildNode] = node
         while current:
             move_text = current.san()
             if current.parent and current.parent.board().turn == chess.WHITE:
                 move_text = f"{current.parent.board().fullmove_number}. {move_text}"
             else:
-                move_text = f"{current.parent.board().fullmove_number}... {move_text}"
+                move_number = (
+                    str(current.parent.board().fullmove_number) + "... "
+                    if node is current
+                    else ""
+                )
+                move_text = f"{move_number}{move_text}"
 
             lbl = ClickableLabel(move_text, current)
             lbl.clicked.connect(self.move_clicked.emit)
             lbl.setStyleSheet(
-                f"color: {COLOR_TEXT_DIM};"
+                f"""
+                QLabel {{
+                    color: {COLOR_TEXT_DIM};
+                    background-color: transparent;
+                    border-radius: 3px;
+                }}
+                QLabel:hover {{
+                    background-color: {COLOR_BG_ROW_HOVER};
+                }}
+                """
             )  # Nested variations often dimmer
             self.content_layout.addWidget(lbl)
 
             if current.variations:
                 current = current.variations[0]
             else:
-                current = None  # type: ignore
+                current = None
 
 
 class AnalysisBoardWidget(QScrollArea):
