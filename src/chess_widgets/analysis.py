@@ -533,8 +533,27 @@ class AnalysisBoardWidget(QScrollArea):
 
         # Activate new node
         if node in self.node_to_label:
-            self.node_to_label[node].set_active(True)
+            label = self.node_to_label[node]
+            label.set_active(True)
             self.active_node = node
+
+            # Scroll to center the active label
+            # Calculate label's center Y relative to the container
+            label_pos = label.mapTo(self.container, label.rect().center())
+            label_y = label_pos.y()
+
+            # Calculate viewport height
+            viewport_height = self.viewport().height()
+
+            # Calculate target scroll position (top of viewport)
+            target_scroll = label_y - viewport_height // 2
+
+            # Clamp and set scrollbar value
+            scrollbar = self.verticalScrollBar()
+            target_scroll = max(
+                scrollbar.minimum(), min(target_scroll, scrollbar.maximum())
+            )
+            scrollbar.setValue(target_scroll)
 
     def resizeEvent(self, event: QResizeEvent) -> None:
         """Position the overlay scrollbar."""
