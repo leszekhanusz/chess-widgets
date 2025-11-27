@@ -81,8 +81,8 @@ def _filter_comment(text: str) -> str:
     """Remove [%...] annotations from comment text."""
     # Remove [%...] blocks
     text = re.sub(r"\[%[^]]+\]", "", text)
-    # Collapse multiple spaces and trim
-    text = re.sub(r"\s+", " ", text).strip()
+    # Trim whitespace from the beginning and end
+    text = text.strip()
     return text
 
 

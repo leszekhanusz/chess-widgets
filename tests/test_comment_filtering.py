@@ -16,6 +16,9 @@ def test_comment_filtering(qtbot: QtBot) -> None:
     node = node.add_variation(chess.Move.from_uci("e7e5"))
     node.comment = "[%csl Ge5] Only annotation"
 
+    node = node.add_variation(chess.Move.from_uci("d2d4"))
+    node.comment = "Line 1\nLine 2 [%csl Gf3]"
+
     # Initialize widget
     widget = AnalysisBoardWidget(game)
     qtbot.addWidget(widget)
@@ -29,8 +32,8 @@ def test_comment_filtering(qtbot: QtBot) -> None:
     assert "Initial comment" in texts
     assert "Initial comment [%csl Gf3]" not in texts
 
-    # 2. Normal comment should be "Normal comment with annotation"
-    assert "Normal comment with annotation" in texts
+    # 2. Normal comment should be "Normal comment  with annotation"
+    assert "Normal comment  with annotation" in texts
     assert "Normal comment [%cal Ge2e4] with annotation" not in texts
 
     # 3. "Only annotation" should result in NO label with that text
@@ -64,5 +67,6 @@ def test_comment_filtering(qtbot: QtBot) -> None:
 
     # Check specific expected texts
     assert "Initial comment" in texts
-    assert "Normal comment with annotation" in texts
+    assert "Normal comment  with annotation" in texts
     assert "Only annotation" in texts
+    assert "Line 1\nLine 2" in texts
