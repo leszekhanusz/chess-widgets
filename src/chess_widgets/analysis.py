@@ -1,3 +1,4 @@
+import re
 from typing import Optional, cast
 
 import chess
@@ -74,6 +75,15 @@ STYLE_ANNOTATION = f"""
     border-bottom: 1px solid {COLOR_BORDER_LIGHT};
     border-top: 1px solid {COLOR_BORDER_LIGHT};
 """
+
+
+def _filter_comment(text: str) -> str:
+    """Remove [%...] annotations from comment text."""
+    # Remove [%...] blocks
+    text = re.sub(r"\[%[^]]+\]", "", text)
+    # Collapse multiple spaces and trim
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
 
 
 class ClickableLabel(QLabel):
@@ -220,12 +230,14 @@ class InlineMovesWidget(QWidget):
 
             # Add comment if any
             if current.comment:
-                comment_lbl = QLabel(current.comment)
-                comment_lbl.setWordWrap(True)
-                comment_lbl.setStyleSheet(
-                    f"color: {COLOR_TEXT_DIM}; font-style: italic;"
-                )
-                self.content_layout.addWidget(comment_lbl)
+                filtered_comment = _filter_comment(current.comment)
+                if filtered_comment:
+                    comment_lbl = QLabel(filtered_comment)
+                    comment_lbl.setWordWrap(True)
+                    comment_lbl.setStyleSheet(
+                        f"color: {COLOR_TEXT_DIM}; font-style: italic;"
+                    )
+                    self.content_layout.addWidget(comment_lbl)
 
             # Handle nested variations (simple recursion for now)
             if len(current.variations) > 1:
@@ -296,7 +308,9 @@ class AnalysisBoardWidget(QScrollArea):
     def process_game(self, game: chess.pgn.Game) -> None:
         # Add initial comment if any
         if game.comment:
-            self.add_annotation(game.comment)
+            filtered_comment = _filter_comment(game.comment)
+            if filtered_comment:
+                self.add_annotation(filtered_comment)
 
         current_node: chess.pgn.ChildNode = game  # type: ignore
         current_row_widget: Optional[MoveRowWidget] = None
@@ -335,9 +349,11 @@ class AnalysisBoardWidget(QScrollArea):
 
                 # If comment
                 if main_next.comment:
-                    self.add_annotation(main_next.comment)
-                    # Close row because annotation breaks flow
-                    current_row_widget = None
+                    filtered_comment = _filter_comment(main_next.comment)
+                    if filtered_comment:
+                        self.add_annotation(filtered_comment)
+                        # Close row because annotation breaks flow
+                        current_row_widget = None
 
             else:  # Black's turn
                 # Try to append to existing row
@@ -360,8 +376,10 @@ class AnalysisBoardWidget(QScrollArea):
 
                 # If comment
                 if main_next.comment:
-                    self.add_annotation(main_next.comment)
-                    current_row_widget = None
+                    filtered_comment = _filter_comment(main_next.comment)
+                    if filtered_comment:
+                        self.add_annotation(filtered_comment)
+                        current_row_widget = None
 
             current_node = main_next
 
