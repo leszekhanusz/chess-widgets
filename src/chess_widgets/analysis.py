@@ -465,17 +465,6 @@ class AnalysisBoardWidget(QScrollArea):
                 for lbl in current_row_widget.get_move_labels():
                     self.node_to_label[lbl.node] = lbl
 
-                # If there are variations for this White move (siblings of main_next)
-                if variations:
-                    # Add them as InlineMovesWidget
-                    for var_node in variations:
-                        var_widget = InlineMovesWidget(var_node)
-                        var_widget.move_clicked.connect(self.move_clicked.emit)
-                        self.main_layout.addWidget(var_widget)
-                        # Register move labels
-                        for lbl in var_widget.get_move_labels():
-                            self.node_to_label[lbl.node] = lbl
-
                 # If comment
                 if main_next.comment:
                     filtered_comment = _filter_comment(main_next.comment)
@@ -483,6 +472,18 @@ class AnalysisBoardWidget(QScrollArea):
                         self.add_annotation(filtered_comment)
                         # Close row because annotation breaks flow
                         current_row_widget = None
+
+                # If there are variations for this White move (siblings of main_next)
+                if variations:
+                    # Add them as InlineMovesWidget
+                    current_row_widget = None
+                    for var_node in variations:
+                        var_widget = InlineMovesWidget(var_node)
+                        var_widget.move_clicked.connect(self.move_clicked.emit)
+                        self.main_layout.addWidget(var_widget)
+                        # Register move labels
+                        for lbl in var_widget.get_move_labels():
+                            self.node_to_label[lbl.node] = lbl
 
             else:  # Black's turn
                 # Try to append to existing row
@@ -503,6 +504,13 @@ class AnalysisBoardWidget(QScrollArea):
                     for lbl in current_row_widget.get_move_labels():
                         self.node_to_label[lbl.node] = lbl
 
+                # If comment
+                if main_next.comment:
+                    filtered_comment = _filter_comment(main_next.comment)
+                    if filtered_comment:
+                        self.add_annotation(filtered_comment)
+                        current_row_widget = None
+
                 # If there are variations for this Black move
                 if variations:
                     for var_node in variations:
@@ -512,13 +520,6 @@ class AnalysisBoardWidget(QScrollArea):
                         # Register move labels
                         for lbl in var_widget.get_move_labels():
                             self.node_to_label[lbl.node] = lbl
-
-                # If comment
-                if main_next.comment:
-                    filtered_comment = _filter_comment(main_next.comment)
-                    if filtered_comment:
-                        self.add_annotation(filtered_comment)
-                        current_row_widget = None
 
             current_node = main_next
 
