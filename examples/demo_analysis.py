@@ -1,4 +1,5 @@
 import os
+import signal
 import sys
 
 import chess.pgn
@@ -40,4 +41,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    # Enable Ctrl-C to close the application
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
     main()
