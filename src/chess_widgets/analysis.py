@@ -121,9 +121,9 @@ def _filter_comment(text: str) -> str:
     return text
 
 
-def _is_linear_branch(node: chess.pgn.ChildNode) -> bool:
+def _is_linear_branch(node: chess.pgn.GameNode) -> bool:
     """Check if a variation branch is linear (no sub-branching)."""
-    current: Optional[chess.pgn.ChildNode] = node
+    current: Optional[chess.pgn.GameNode] = node
     while current:
         if len(current.variations) > 1:
             return False
@@ -554,9 +554,9 @@ class VariationBranchWidget(QWidget):
         # Row 1: Header (Expander + InlineMoves)
         # Row 2: Sub-tree (TreeMovesWidget)
 
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setSpacing(0)
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.setSpacing(0)
 
         # Header
         self.header_widget = QWidget()
@@ -588,7 +588,7 @@ class VariationBranchWidget(QWidget):
             pass
 
         self.header_layout.addWidget(self.inline_widget)
-        self.layout.addWidget(self.header_widget)
+        self.main_layout.addWidget(self.header_widget)
 
         # Now populate, so signals can be emitted
         self.inline_widget.populate_linear(start_node)
@@ -611,7 +611,7 @@ class VariationBranchWidget(QWidget):
         self.sub_tree = TreeMovesWidget(node.variations, collapsible=self.collapsible)
         self.sub_tree.move_clicked.connect(self.move_clicked.emit)
 
-        self.layout.addWidget(self.sub_tree)
+        self.main_layout.addWidget(self.sub_tree)
 
     def on_toggle(self, checked: bool) -> None:
         if self.sub_tree:
@@ -634,15 +634,15 @@ class TreeMovesWidget(QWidget):
         parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent)
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(10, 0, 0, 0)  # Indent for the tree level
-        self.layout.setSpacing(2)
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(10, 0, 0, 0)  # Indent for the tree level
+        self.main_layout.setSpacing(2)
 
         self.branches = []
         for node in variation_nodes:
             branch = VariationBranchWidget(node, collapsible=collapsible)
             branch.move_clicked.connect(self.move_clicked.emit)
-            self.layout.addWidget(branch)
+            self.main_layout.addWidget(branch)
             self.branches.append(branch)
 
     def get_move_labels(self) -> list[MoveLabel]:
@@ -667,7 +667,7 @@ class AnalysisBoardWidget(QScrollArea):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         # Make the frame focusable
-        self.setFocusPolicy(Qt.StrongFocus)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         # Track hover state for scrollbar visibility
         self.is_hovered = False
@@ -700,8 +700,8 @@ class AnalysisBoardWidget(QScrollArea):
         self.setWidget(self.container)
 
         # Track active node and node-to-label mapping
-        self.active_node: Optional[chess.pgn.ChildNode] = None
-        self.node_to_label: dict[chess.pgn.ChildNode, MoveLabel] = {}
+        self.active_node: Optional[chess.pgn.GameNode] = None
+        self.node_to_label: dict[chess.pgn.GameNode, MoveLabel] = {}
 
         # Initialize style
         self.setStyleSheet(STYLE_SCROLL_AREA)
@@ -816,7 +816,7 @@ class AnalysisBoardWidget(QScrollArea):
         lbl.setStyleSheet(STYLE_ANNOTATION)
         self.main_layout.addWidget(lbl)
 
-    def set_active_node(self, node: chess.pgn.ChildNode) -> None:
+    def set_active_node(self, node: chess.pgn.GameNode) -> None:
         """Set the active node and update the visual highlighting."""
         # Deactivate previous active node
         if self.active_node and self.active_node in self.node_to_label:
@@ -855,9 +855,9 @@ class AnalysisBoardWidget(QScrollArea):
             self.set_active_node(self.active_node.variations[0])
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        if event.key() == Qt.Key_Left:
+        if event.key() == Qt.Key.Key_Left:
             self.prev_move()
-        elif event.key() == Qt.Key_Right:
+        elif event.key() == Qt.Key.Key_Right:
             self.next_move()
         else:
             # Pass other keys to the base class
