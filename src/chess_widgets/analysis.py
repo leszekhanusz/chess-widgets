@@ -307,9 +307,15 @@ class InlineMovesWidget(QWidget):
                     )
                     self.content_layout.addWidget(comment_lbl)
 
-            # Handle nested variations (simple recursion for now)
-            if len(current.variations) > 1:
-                for variation in current.variations[1:]:
+            # Handle siblings of the CURRENT node (alternatives to this move)
+            # We only do this if we are not at the start node
+            # (start node siblings are handled by parent)
+            if (
+                current != node
+                and current.parent
+                and len(current.parent.variations) > 1
+            ):
+                for variation in current.parent.variations[1:]:
                     # For inline, we usually wrap in parens
                     paren_start = QLabel("(")
                     paren_start.setStyleSheet(f"color: {COLOR_TEXT_DIM};")
@@ -323,6 +329,7 @@ class InlineMovesWidget(QWidget):
                     paren_end.setStyleSheet(f"color: {COLOR_TEXT_DIM};")
                     self.content_layout.addWidget(paren_end)
 
+            # Move to next node
             if current.variations:
                 current = current.variations[0]
             else:
