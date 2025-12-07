@@ -365,14 +365,7 @@ class InlineMovesWidget(QWidget):
     def populate_linear(self, node: chess.pgn.ChildNode) -> None:
         current: Optional[chess.pgn.ChildNode] = node
         while current:
-            # Check for branching BEFORE rendering:
-            # Actually we render the current move, THEN check if its
-            # continuation branches.
-            # But wait, siblings of 'current' are handled by the parent
-            # TreeMovesWidget (since we are in stop_on_complex_branch mode,
-            # we assume this InlineMovesWidget was created for a specific branch).
-
-            # Add move
+            # 1. Render the current move
             move_text = current.san()
             if current.parent and current.parent.board().turn == chess.WHITE:
                 move_text = f"{current.parent.board().fullmove_number}. {move_text}"
@@ -413,7 +406,26 @@ class InlineMovesWidget(QWidget):
                     )
                     self.content_layout.addWidget(comment_lbl)
 
-            # Check next moves (variations from CURRENT)
+            # 2. Render siblings (alternatives to THIS move)
+            # We only do this if we are not at the start node
+            # (start node siblings handled by parent)
+            if (
+                current != node
+                and current.parent
+                and len(current.parent.variations) > 1
+            ):
+                for variation in current.parent.variations[1:]:
+                    paren_start = QLabel("(")
+                    paren_start.setStyleSheet(f"color: {COLOR_TEXT_DIM};")
+                    self.content_layout.addWidget(paren_start)
+
+                    self.populate_inline(variation)
+
+                    paren_end = QLabel(")")
+                    paren_end.setStyleSheet(f"color: {COLOR_TEXT_DIM};")
+                    self.content_layout.addWidget(paren_end)
+
+            # 3. Check next moves (continuations) to decide whether to continue or stop
             next_moves = current.variations
             if not next_moves:
                 # End of line
@@ -431,26 +443,13 @@ class InlineMovesWidget(QWidget):
                         is_simple = True
 
                 if is_simple:
-                    # Render Main (next_moves[0]) continuations inline...
-                    # But first render the Alternative (next_moves[1]) in parens
-                    paren_start = QLabel("(")
-                    paren_start.setStyleSheet(f"color: {COLOR_TEXT_DIM};")
-                    self.content_layout.addWidget(paren_start)
-
-                    self.populate_inline(next_moves[1])
-
-                    paren_end = QLabel(")")
-                    paren_end.setStyleSheet(f"color: {COLOR_TEXT_DIM};")
-                    self.content_layout.addWidget(paren_end)
-
-                    # Continue with main line
+                    # Continue with main line.
+                    # The alternative (next_moves[1]) will be rendered in
+                    # the NEXT iteration as a sibling of next_moves[0].
                     current = next_moves[0]
                 else:
                     # Complex branching: Stop here and emit signal
                     # The parent (VariationBranchWidget) will pick this up
-                    # We need to notify that we stopped at `current`.
-                    # Actually `current` is the node we just rendered.
-                    # The children of `current` are the ones that branch.
                     self.branch_encountered.emit(current)
                     current = None
 
