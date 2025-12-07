@@ -2,9 +2,10 @@ import os
 import random
 import signal
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import chess
+import chess.pgn
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QFont, QFontDatabase, QResizeEvent, QWheelEvent
 from PySide6.QtWidgets import (
@@ -17,7 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from chess_widgets import BoardWidget
+from chess_widgets import AnalysisBoardWidget, BoardWidget
 
 
 class MainWindow(QMainWindow):
@@ -39,9 +40,19 @@ class MainWindow(QMainWindow):
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        layout = QVBoxLayout(central_widget)
+
+        # Main horizontal layout
+        main_layout = QHBoxLayout(central_widget)
+        main_layout.setSpacing(10)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+
+        # Left container for Board + Controls
+        left_container = QWidget()
+        layout = QVBoxLayout(left_container)
         layout.setSpacing(0)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        main_layout.addWidget(left_container, 0)  # Fixed size or preferred
 
         # Flip button at the top
         flip_widget = QWidget()
@@ -150,15 +161,25 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(nav_widget)
 
+        # Right side: Analysis Board
+        self.analysis_widget = AnalysisBoardWidget()
+        self.analysis_widget.move_clicked.connect(self.on_analysis_move_clicked)
+        # Give it a minimum width and let it expand
+        self.analysis_widget.setMinimumWidth(300)
+        self.analysis_widget.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
+
+        main_layout.addWidget(self.analysis_widget, 1)
+
         self.board_widget.move_played.connect(self.on_move_played)
         self.board_widget.move_undone.connect(self.on_move_undone)
 
         self.flipped = False
         self.player_color = chess.WHITE
 
-        # Game history
-        self.move_history: List[chess.Move] = []
-        self.current_move_index = 0  # 0 means start of game (no moves made)
+        self.game = chess.pgn.Game()
+        self.current_node: chess.pgn.GameNode = self.game
 
         self.update_buttons()
 
@@ -166,24 +187,14 @@ class MainWindow(QMainWindow):
         """Maintain aspect ratio to keep board square and fill horizontal space."""
         super().resizeEvent(event)
 
-        # Calculate the required height based on width
-        # Width includes margins (20px left + 20px right = 40px)
-        # Height includes: top margin (20px) + flip button (50px) + board
-        # + nav bar (50px) + bottom margin (20px)
-        width = self.width()
-        board_size = width - 40  # Subtract horizontal margins
-
-        # Total height needed:
-        # - Top margin: 20
-        # - Flip button: 50
-        # - Board: board_size (square)
-        # - Nav bar: 50
-        # - Bottom margin: 20
-        required_height = 20 + 50 + board_size + 50 + 20
-
         # Adjust height if needed (tolerance to avoid infinite loops)
-        if abs(self.height() - required_height) > 5:
-            self.resize(width, int(required_height))
+        # With horizontal layout, we might not need this strict resizing anymore
+        # primarily for the board aspect ratio.
+        # But we still want board to be square.
+        # self.board_widget has a fixed aspect ratio usually?
+        # Let's simplify and remove the strict window resizing logic
+        # which might conflict with horizontal layout
+        pass
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         """Handle mouse wheel events to navigate moves."""
@@ -206,29 +217,52 @@ class MainWindow(QMainWindow):
         interactive = move_info.get("interactive", False)
         print(f"{'Interactive Move' if interactive else 'Move'} played: {move}")
 
-        # If we made an interactive move from a previous position,
-        # we truncate the history
-        if self.current_move_index < len(self.move_history):
-            if interactive:
-                self.move_history = self.move_history[: self.current_move_index]
-                self.move_history.append(move)
-        else:
-            self.move_history.append(move)
+        if interactive:
+            # If interactive move, we need to handle branching or overwriting
+            # For this simple demo, we'll append to current node
+            # Create a new node
+            new_node = self.current_node.add_variation(move)
+            self.current_node = new_node
 
-        self.current_move_index += 1
+            # Sync to analysis widget
+            # We call set_game to refresh the whole view for simplicity
+            # when structure changes
+            self.analysis_widget.set_game(self.game)
+            self.analysis_widget.set_active_node(self.current_node)
+
+        # For programmatic moves (replay), we don't assume we are creating
+        # new nodes immediately unless handling a replay loop. But here 'move_played'
+        # usually comes from BoardWidget which only plays what we tell it
+        # or what user does.
+        # If it's replay (go_next), we just update state.
+
+        # Actually go_next calls board_widget.play_move(animate=True).
+        # So it triggers this signal.
+        # But we only want to ADD to PGN if it was INTERACTIVE.
+        # If it wasn't interactive, we assume we are just traversing
+        # the existing game tree.
+
         self.check_opponent_move()
+        self.update_buttons()
 
-        print(
-            f"Move history: {self.move_history} at position {self.current_move_index}"
-        )
+    def on_analysis_move_clicked(self, node: chess.pgn.ChildNode) -> None:
+        """Handle click on move in analysis widget."""
+        # Update board to this position
+        self.board_widget.set_board(node.board())
+        self.current_node = node
+        self.analysis_widget.set_active_node(node)
+        self.update_buttons()
+        # Also need to check if we should trigger opponent move? Maybe not on review.
+
         self.update_buttons()
 
     def on_move_undone(self, move: chess.Move) -> None:
         print(f"Move undone: {move}")
-        self.current_move_index -= 1
-        print(
-            f"Move history: {self.move_history} at position {self.current_move_index}"
-        )
+        # Move up the tree
+        if self.current_node.parent:
+            self.current_node = self.current_node.parent
+            self.analysis_widget.set_active_node(self.current_node)
+
         self.update_buttons()
 
     def check_opponent_move(self) -> None:
@@ -255,11 +289,19 @@ class MainWindow(QMainWindow):
             print(f"Opponent plays: {random_move}")
             self.board_widget.play_move(random_move, animate=True)
 
+            # Manually update PGN and analysis board
+            new_node = self.current_node.add_variation(random_move)
+            self.current_node = new_node
+
+            self.analysis_widget.set_game(self.game)
+            self.analysis_widget.set_active_node(self.current_node)
+            self.update_buttons()
+
     def is_at_last_move(self) -> bool:
-        return self.current_move_index == len(self.move_history)
+        return len(self.current_node.variations) == 0
 
     def is_at_first_move(self) -> bool:
-        return self.current_move_index == 0
+        return self.current_node.parent is None
 
     def update_buttons(self) -> None:
         has_prev = not self.is_at_first_move()
@@ -280,13 +322,25 @@ class MainWindow(QMainWindow):
 
     def go_next(self) -> None:
         if not self.is_at_last_move():
-            move = self.move_history[self.current_move_index]
-            self.board_widget.play_move(move, animate=True)
+            # Get next move from current node
+            # Default to main variation
+            next_node = self.current_node.variations[0]
+            move = next_node.move
+            # Play move WITHOUT triggering interactive logic, but animating
+            self.board_widget.play_move(move, animate=True, interactive=False)
+            self.current_node = next_node
+            self.analysis_widget.set_active_node(self.current_node)
 
     def go_last(self) -> None:
         while not self.is_at_last_move():
-            move = self.move_history[self.current_move_index]
-            self.board_widget.play_move(move, animate=False)
+            # Optimization: just set board to final position if too long?
+            # For now, step through
+            self.go_next()  # Helper that plays one move
+            # To make it fast/instant without animation:
+            # next_node = self.current_node.variations[0]
+            # self.current_node = next_node
+            # self.board_widget.play_move(next_node.move, animate=False)
+            # self.analysis_widget.set_active_node(self.current_node)
 
 
 if __name__ == "__main__":

@@ -710,6 +710,25 @@ class AnalysisBoardWidget(QScrollArea):
         if game:
             self.process_game(game)
 
+    def set_game(self, game: chess.pgn.Game) -> None:
+        self.clear()
+        self.process_game(game)
+
+    def clear(self) -> None:
+        """Clear the current game and reset the view."""
+        # Remove all widgets from main_layout
+        while self.main_layout.count():
+            item = self.main_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+        # Reset state
+        self.active_node = None
+        self.node_to_label = {}
+        self.scrollbar_hovered = False
+        self._update_scrollbar_style()
+
     def process_game(self, game: chess.pgn.Game) -> None:
         # Add initial comment if any
         if game.comment:
@@ -849,10 +868,12 @@ class AnalysisBoardWidget(QScrollArea):
     def prev_move(self) -> None:
         if self.active_node and self.active_node.parent:
             self.set_active_node(self.active_node.parent)
+            self.move_clicked.emit(self.active_node)
 
     def next_move(self) -> None:
         if self.active_node and len(self.active_node.variations) > 0:
             self.set_active_node(self.active_node.variations[0])
+            self.move_clicked.emit(self.active_node)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key.Key_Left:
