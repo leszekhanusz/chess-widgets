@@ -11,7 +11,7 @@ def main() -> None:
     app = QApplication(sys.argv)
 
     # Load the example PGN
-    pgn_path = os.path.join(os.path.dirname(__file__), "lichess_study_example.pgn")
+    pgn_path = os.path.join(os.path.dirname(__file__), "pgn/lichess_study_example.pgn")
     with open(pgn_path) as f:
         game = chess.pgn.read_game(f)
 
