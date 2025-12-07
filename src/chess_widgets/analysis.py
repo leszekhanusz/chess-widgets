@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QPushButton,
     QScrollArea,
     QScrollBar,
     QVBoxLayout,
@@ -118,6 +119,19 @@ def _filter_comment(text: str) -> str:
     # Trim whitespace from the beginning and end
     text = text.strip()
     return text
+
+
+def _is_linear_branch(node: chess.pgn.ChildNode) -> bool:
+    """Check if a variation branch is linear (no sub-branching)."""
+    current: Optional[chess.pgn.ChildNode] = node
+    while current:
+        if len(current.variations) > 1:
+            return False
+        if current.variations:
+            current = current.variations[0]
+        else:
+            current = None
+    return True
 
 
 class MoveLabel(QLabel):
@@ -235,11 +249,19 @@ class MoveRowWidget(QFrame):
 
 class InlineMovesWidget(QWidget):
     move_clicked = Signal(object)
+    # Signal emitted when we hit a complex branching point,
+    # passing the node that has the branches
+    branch_encountered = Signal(object)
 
     def __init__(
-        self, start_node: chess.pgn.ChildNode, parent: Optional[QWidget] = None
+        self,
+        start_node: chess.pgn.ChildNode,
+        stop_on_complex_branch: bool = False,
+        defer_populate: bool = False,
+        parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent)
+        self.stop_on_complex_branch = stop_on_complex_branch
 
         # Indentation line
         self.indent_bar = QFrame(self)
@@ -247,6 +269,10 @@ class InlineMovesWidget(QWidget):
             f"background-color: {COLOR_VARIATION_BAR}; width: 2px;"
         )
         self.indent_bar.setFixedWidth(2)
+        # If we are stopping on complex branch (meaning we are part of a tree),
+        # the indentation might be handled by the Tree/Branch widget, but
+        # currently InlineMovesWidget always has an indent bar.
+        # In the new design, the TreeMovesWidget might nest these.
 
         # Container for flow content
         self.content_widget = QWidget()
@@ -261,7 +287,11 @@ class InlineMovesWidget(QWidget):
         self.main_layout.addWidget(self.indent_bar)
         self.main_layout.addWidget(self.content_widget, 1)
 
-        self.populate(start_node)
+        if not defer_populate:
+            if self.stop_on_complex_branch:
+                self.populate_linear(start_node)
+            else:
+                self.populate(start_node)
 
     def populate(self, node: chess.pgn.ChildNode) -> None:
         current: Optional[chess.pgn.ChildNode] = node
@@ -316,13 +346,10 @@ class InlineMovesWidget(QWidget):
                 and len(current.parent.variations) > 1
             ):
                 for variation in current.parent.variations[1:]:
-                    # For inline, we usually wrap in parens
                     paren_start = QLabel("(")
                     paren_start.setStyleSheet(f"color: {COLOR_TEXT_DIM};")
                     self.content_layout.addWidget(paren_start)
 
-                    # Recursive inline widget? Or just flatten?
-                    # Flattening is easier for FlowLayout
                     self.populate_inline(variation)
 
                     paren_end = QLabel(")")
@@ -334,6 +361,98 @@ class InlineMovesWidget(QWidget):
                 current = current.variations[0]
             else:
                 current = None
+
+    def populate_linear(self, node: chess.pgn.ChildNode) -> None:
+        current: Optional[chess.pgn.ChildNode] = node
+        while current:
+            # Check for branching BEFORE rendering:
+            # Actually we render the current move, THEN check if its
+            # continuation branches.
+            # But wait, siblings of 'current' are handled by the parent
+            # TreeMovesWidget (since we are in stop_on_complex_branch mode,
+            # we assume this InlineMovesWidget was created for a specific branch).
+
+            # Add move
+            move_text = current.san()
+            if current.parent and current.parent.board().turn == chess.WHITE:
+                move_text = f"{current.parent.board().fullmove_number}. {move_text}"
+            else:
+                move_number = (
+                    str(current.parent.board().fullmove_number) + "... "
+                    if node is current
+                    else ""
+                )
+                move_text = f"{move_number}{move_text}"
+
+            lbl = MoveLabel(
+                move_text,
+                current,
+                f"""
+                QLabel {{
+                    color: {COLOR_TEXT};
+                    background-color: transparent;
+                    border-radius: 3px;
+                    padding: 1px 3px;
+                }}
+                QLabel:hover {{
+                    background-color: {COLOR_BG_ROW_HOVER};
+                }}
+            """,
+            )
+            lbl.clicked.connect(self.move_clicked.emit)
+            self.content_layout.addWidget(lbl)
+
+            # Add comment if any
+            if current.comment:
+                filtered_comment = _filter_comment(current.comment)
+                if filtered_comment:
+                    comment_lbl = QLabel(filtered_comment)
+                    comment_lbl.setWordWrap(True)
+                    comment_lbl.setStyleSheet(
+                        f"color: {COLOR_TEXT_DIM}; font-style: italic;"
+                    )
+                    self.content_layout.addWidget(comment_lbl)
+
+            # Check next moves (variations from CURRENT)
+            next_moves = current.variations
+            if not next_moves:
+                # End of line
+                current = None
+            elif len(next_moves) == 1:
+                # Linear continuation
+                current = next_moves[0]
+            else:
+                # Branching point ( > 1 variations)
+                # Heuristic: Simple or Complex?
+                # Simple: 2 branches, 2nd one is linear/leaf.
+                is_simple = False
+                if len(next_moves) == 2:
+                    if _is_linear_branch(next_moves[1]):
+                        is_simple = True
+
+                if is_simple:
+                    # Render Main (next_moves[0]) continuations inline...
+                    # But first render the Alternative (next_moves[1]) in parens
+                    paren_start = QLabel("(")
+                    paren_start.setStyleSheet(f"color: {COLOR_TEXT_DIM};")
+                    self.content_layout.addWidget(paren_start)
+
+                    self.populate_inline(next_moves[1])
+
+                    paren_end = QLabel(")")
+                    paren_end.setStyleSheet(f"color: {COLOR_TEXT_DIM};")
+                    self.content_layout.addWidget(paren_end)
+
+                    # Continue with main line
+                    current = next_moves[0]
+                else:
+                    # Complex branching: Stop here and emit signal
+                    # The parent (VariationBranchWidget) will pick this up
+                    # We need to notify that we stopped at `current`.
+                    # Actually `current` is the node we just rendered.
+                    # The children of `current` are the ones that branch.
+                    self.branch_encountered.emit(current)
+                    current = None
 
     def populate_inline(self, node: chess.pgn.ChildNode) -> None:
         # Helper to add moves to the SAME layout for nested variations
@@ -392,13 +511,159 @@ class InlineMovesWidget(QWidget):
         return labels
 
 
+class ExpandButton(QPushButton):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self.setCheckable(True)
+        self.setChecked(True)  # Expanded by default
+        self.setFixedSize(16, 16)
+        self.setStyleSheet(
+            """
+            QPushButton {
+                background-color: transparent;
+                border: none;
+                color: #888888;
+                font-size: 10px;
+            }
+            QPushButton:hover {
+                color: #4D4D4D;
+            }
+        """
+        )
+        # We'll draw the triangle manually or use text. Text "▼" / "▶" is easiest.
+        self.setText("▼")
+        self.clicked.connect(self.update_icon)
+
+    def update_icon(self, checked: bool) -> None:
+        self.setText("▼" if checked else "▶")
+
+
+class VariationBranchWidget(QWidget):
+    move_clicked = Signal(object)
+
+    def __init__(
+        self,
+        start_node: chess.pgn.ChildNode,
+        collapsible: bool = False,
+        parent: Optional[QWidget] = None,
+    ) -> None:
+        super().__init__(parent)
+        self.start_node = start_node
+        self.collapsible = collapsible
+
+        # Main Layout: Vertical.
+        # Row 1: Header (Expander + InlineMoves)
+        # Row 2: Sub-tree (TreeMovesWidget)
+
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
+
+        # Header
+        self.header_widget = QWidget()
+        self.header_layout = QHBoxLayout(self.header_widget)
+        self.header_layout.setContentsMargins(0, 0, 0, 0)
+        self.header_layout.setSpacing(2)
+
+        self.expand_btn: Optional[ExpandButton] = None
+        self.sub_tree: Optional[QWidget] = None  # Will be TreeMovesWidget
+
+        # Inline moves for this linear segment
+        self.inline_widget = InlineMovesWidget(
+            start_node, stop_on_complex_branch=True, defer_populate=True
+        )
+        self.inline_widget.move_clicked.connect(self.move_clicked.emit)
+        self.inline_widget.branch_encountered.connect(self.on_branch_encountered)
+
+        # We don't know yet if we need an expand button until we see if
+        # there's a sub-tree.
+        # But we need to insert the inline widget first.
+        # However, to place the button to the LEFT of everything, we insert it now?
+        # Actually, we can add it later at index 0 if needed, or just reserve space.
+        # For now, we just add the inline widget.
+
+        if self.collapsible:
+            # Placeholder or always create?
+            # Let's create it hidden initially?
+            # Or wait until we know if we have children.
+            pass
+
+        self.header_layout.addWidget(self.inline_widget)
+        self.layout.addWidget(self.header_widget)
+
+        # Now populate, so signals can be emitted
+        self.inline_widget.populate_linear(start_node)
+
+    def on_branch_encountered(self, node: chess.pgn.ChildNode) -> None:
+        # We hit a complex branch at `node`.
+        # `node` is the last linear move. `node.variations` has the branches.
+        # We need to create a TreeMovesWidget for these variations
+        # and add it to our body.
+
+        if self.collapsible:
+            self.expand_btn = ExpandButton()
+            self.expand_btn.toggled.connect(self.on_toggle)
+            self.header_layout.insertWidget(0, self.expand_btn)
+
+        # Create sub-tree
+        # "Everytime there is a variation possible from the main line,
+        # a single TreeMovesWidget should be made"
+        # Here we have multiple variations from `node`.
+        self.sub_tree = TreeMovesWidget(node.variations, collapsible=self.collapsible)
+        self.sub_tree.move_clicked.connect(self.move_clicked.emit)
+
+        self.layout.addWidget(self.sub_tree)
+
+    def on_toggle(self, checked: bool) -> None:
+        if self.sub_tree:
+            self.sub_tree.setVisible(checked)
+
+    def get_move_labels(self) -> list[MoveLabel]:
+        labels = self.inline_widget.get_move_labels()
+        if self.sub_tree and isinstance(self.sub_tree, TreeMovesWidget):
+            labels.extend(self.sub_tree.get_move_labels())
+        return labels
+
+
+class TreeMovesWidget(QWidget):
+    move_clicked = Signal(object)
+
+    def __init__(
+        self,
+        variation_nodes: list[chess.pgn.ChildNode],
+        collapsible: bool = False,
+        parent: Optional[QWidget] = None,
+    ) -> None:
+        super().__init__(parent)
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(10, 0, 0, 0)  # Indent for the tree level
+        self.layout.setSpacing(2)
+
+        self.branches = []
+        for node in variation_nodes:
+            branch = VariationBranchWidget(node, collapsible=collapsible)
+            branch.move_clicked.connect(self.move_clicked.emit)
+            self.layout.addWidget(branch)
+            self.branches.append(branch)
+
+    def get_move_labels(self) -> list[MoveLabel]:
+        labels = []
+        for branch in self.branches:
+            labels.extend(branch.get_move_labels())
+        return labels
+
+
 class AnalysisBoardWidget(QScrollArea):
     move_clicked = Signal(object)
 
     def __init__(
-        self, game: Optional[chess.pgn.Game] = None, parent: Optional[QWidget] = None
+        self,
+        game: Optional[chess.pgn.Game] = None,
+        collapsible: bool = True,
+        parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent)
+        self.collapsible = collapsible
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
@@ -457,20 +722,19 @@ class AnalysisBoardWidget(QScrollArea):
         current_row_widget: Optional[MoveRowWidget] = None
 
         while current_node.variations:
+            # Check for existing sibling variations of the CURRENT line
+            # (alternatives to main_next)
+            # Standard PGN structure: node.variations[0] is main move,
+            # others are alts.
+            # Here `current_node.variations[0]` is the main line next move.
+            # `current_node.variations[1:]` are the alternatives/variations
+            # at this point.
+
             main_next = current_node.variations[0]
             variations = current_node.variations[1:]
 
             is_white = current_node.board().turn == chess.WHITE
             move_number = current_node.board().fullmove_number
-
-            # Handle Variations (Alternatives to main_next)
-            # Variations are usually displayed AFTER the move they branch from.
-            # But here they branch from `current_node`.
-
-            if variations:
-                # If it's Black's turn (played White), variations for Black...
-                # The variations should appear after the White move.
-                pass
 
             if is_white:
                 # Start new row
@@ -493,15 +757,19 @@ class AnalysisBoardWidget(QScrollArea):
 
                 # If there are variations for this White move (siblings of main_next)
                 if variations:
-                    # Add them as InlineMovesWidget
+                    # Switch to TreeMovesWidget for variations
                     current_row_widget = None
-                    for var_node in variations:
-                        var_widget = InlineMovesWidget(var_node)
-                        var_widget.move_clicked.connect(self.move_clicked.emit)
-                        self.main_layout.addWidget(var_widget)
-                        # Register move labels
-                        for lbl in var_widget.get_move_labels():
-                            self.node_to_label[lbl.node] = lbl
+
+                    # Create TreeMovesWidget for all variations
+                    tree_widget = TreeMovesWidget(
+                        variations, collapsible=self.collapsible
+                    )
+                    tree_widget.move_clicked.connect(self.move_clicked.emit)
+                    self.main_layout.addWidget(tree_widget)
+
+                    # Register move labels
+                    for lbl in tree_widget.get_move_labels():
+                        self.node_to_label[lbl.node] = lbl
 
             else:  # Black's turn
                 # Try to append to existing row
@@ -531,13 +799,15 @@ class AnalysisBoardWidget(QScrollArea):
 
                 # If there are variations for this Black move
                 if variations:
-                    for var_node in variations:
-                        var_widget = InlineMovesWidget(var_node)
-                        var_widget.move_clicked.connect(self.move_clicked.emit)
-                        self.main_layout.addWidget(var_widget)
-                        # Register move labels
-                        for lbl in var_widget.get_move_labels():
-                            self.node_to_label[lbl.node] = lbl
+                    tree_widget = TreeMovesWidget(
+                        variations, collapsible=self.collapsible
+                    )
+                    tree_widget.move_clicked.connect(self.move_clicked.emit)
+                    self.main_layout.addWidget(tree_widget)
+
+                    # Register move labels
+                    for lbl in tree_widget.get_move_labels():
+                        self.node_to_label[lbl.node] = lbl
 
             current_node = main_next
 
