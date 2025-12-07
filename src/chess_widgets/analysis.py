@@ -367,6 +367,17 @@ class InlineMovesWidget(QWidget):
             lbl.clicked.connect(self.move_clicked.emit)
             self.content_layout.addWidget(lbl)
 
+            # Add comment if any
+            if current.comment:
+                filtered_comment = _filter_comment(current.comment)
+                if filtered_comment:
+                    comment_lbl = QLabel(filtered_comment)
+                    comment_lbl.setWordWrap(True)
+                    comment_lbl.setStyleSheet(
+                        f"color: {COLOR_TEXT_DIM}; font-style: italic;"
+                    )
+                    self.content_layout.addWidget(comment_lbl)
+
             if current.variations:
                 current = current.variations[0]
             else:
