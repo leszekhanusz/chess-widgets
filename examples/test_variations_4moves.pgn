@@ -1,0 +1,43 @@
+[Event "Test PGN with Recursive Variations"]
+[Site "Test"]
+[Date "2025.12.07"]
+[Round "1"]
+[White "Test Player"]
+[Black "Test Player"]
+[Result "*"]
+
+1. e4 { The King's Pawn Opening - the most popular first move. } ( 1. d4 d5
+{ The most solid reply, controlling the center. } ( 1... Nf6 2. c4
+{ Heading toward Indian systems. } ( 2. Nf3 e6 { Flexible development. } ( 2...
+g6 ) ( 2... d5 ) ) ( 2. Bg5 e6 { Preparing to break the pin. } ( 2... d5 ) (
+2... Ne4 ) ) 2... e6 { The Queen's Indian setup. } ( 2... g6 ) ( 2... c5 ) ) (
+1... f5 2. c4 { Gaining space on the queenside. } ( 2. Nf3 Nf6
+{ Solid development. } ( 2... e6 ) ( 2... d6 ) ) ( 2. e3 Nf6
+{ Quiet development. } ( 2... e6 ) ( 2... d6 ) ) 2... Nf6
+{ Natural development. } ( 2... e6 ) ( 2... g6 ) ) 2. c4
+{ The Queen's Gambit. } ( 2. Nf3 Nf6 { Developing symmetrically. } ( 2... e6 )
+( 2... Bg4 ) ) ( 2. Bf4 Nf6 { Natural development. } ( 2... e6 ) ( 2... c5 ) )
+2... e6 { The Queen's Gambit Declined. } ( 2... c6 ) ( 2... dxc4 ) ) ( 1. Nf3
+d5 { Occupying the center classically. } ( 1... Nf6 2. g3
+{ Preparing to fianchetto. } ( 2. c4 e6 { The Queen's Indian idea. } ( 2... g6
+) ( 2... c5 ) ) ( 2. d4 e6 { Transposing to d4 openings. } ( 2... d5 ) ( 2...
+g6 ) ) 2... d5 { Occupying the center. } ( 2... g6 ) ( 2... b6 ) ) ( 1... c5 2.
+c4 { The Symmetrical English. } ( 2. g3 Nc6 { Fianchetto setup. } ( 2... d5 ) (
+2... g6 ) ) ( 2. e4 d6 { Transposing to Sicilian. } ( 2... Nc6 ) ( 2... e6 ) )
+2... Nc6 { Developing naturally. } ( 2... g6 ) ( 2... e6 ) ) 2. g3
+{ The King's Indian Attack setup. } ( 2. c4 e6 { Solid and flexible. } ( 2...
+c6 ) ( 2... dxc4 ) ) ( 2. d3 Nf6 { Natural piece development. } ( 2... c5 ) (
+2... e6 ) ) 2... Nf6 { Natural development. } ( 2... c6 ) ( 2... Bg4 ) ) 1...
+e5 { The Open Game - classical and principled. } ( 1... c5 2. Nf3
+{ Preparing d4 - the Open Sicilian. } ( 2. Nc3 Nc6
+{ Developing with tempo ideas. } ( 2... d6 ) ( 2... e6 ) ) ( 2. c3 d5
+{ The most principled reply. } ( 2... Nf6 ) ( 2... e6 ) ) 2... d6
+{ Preparing the Najdorf or Dragon. } ( 2... Nc6 ) ( 2... e6 ) ) ( 1... e6 2. d4
+{ The main line, seizing the center. } ( 2. d3 d5 { Solid play from Black. } (
+2... c5 ) ( 2... Nf6 ) ) ( 2. Nc3 d5 { The standard French response. } ( 2...
+Nf6 ) ( 2... c5 ) ) 2... d5 { Challenging White's center. } ( 2... c5 ) ( 2...
+Nf6 ) ) 2. Nf3 { The most natural move, attacking e5. } ( 2. Nc3 Nf6
+{ Attacking e4 immediately. } ( 2... Nc6 ) ( 2... Bc5 ) ) ( 2. Bc4 Nf6
+{ Counter-attacking e4. } ( 2... Bc5 ) ( 2... Nc6 ) ) 2... Nc6
+{ Defending e5 and developing. } ( 2... Nf6 ) ( 2... d6 ) *
+

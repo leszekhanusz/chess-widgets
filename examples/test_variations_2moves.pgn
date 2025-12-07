@@ -1,0 +1,13 @@
+[Event "Test PGN with Recursive Variations (2 half-moves)"]
+[Site "Test"]
+[Date "2025.12.07"]
+[Round "1"]
+[White "Test Player"]
+[Black "Test Player"]
+[Result "*"]
+
+1. e4 { The King's Pawn Opening - the most popular first move. } ( 1. d4 d5
+{ The most solid reply, controlling the center. } ( 1... Nf6 ) ( 1... f5 ) ) (
+1. Nf3 d5 { Occupying the center classically. } ( 1... Nf6 ) ( 1... c5 ) ) 1...
+e5 { The Open Game - classical and principled. } ( 1... c5 ) ( 1... e6 ) *
+
