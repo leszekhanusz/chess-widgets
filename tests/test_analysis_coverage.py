@@ -79,6 +79,39 @@ def test_move_label_events(app: object) -> None:
     assert label.is_active is False
     assert label.cursor().shape() == Qt.CursorShape.PointingHandCursor
 
+    # Test hover events when inactive
+    hovered_node = None
+
+    def on_hover(n):
+        nonlocal hovered_node
+        hovered_node = n
+
+    label.hovered.connect(on_hover)
+
+    # Enter event when inactive -> should emit node and apply hover style
+    label.enterEvent(QEnterEvent(QPoint(0, 0), QPoint(0, 0), QPoint(0, 0)))
+    assert label.is_hovered is True
+    assert hovered_node == node
+    # Check that hover style is applied (line 189)
+    assert "E4E4E4" in label.styleSheet() or "e4e4e4" in label.styleSheet()
+
+    # Leave event when hovered -> should emit None and remove hover style
+    hovered_node = None
+    label.leaveEvent(QEvent(QEvent.Type.Leave))
+    assert label.is_hovered is False
+    assert hovered_node is None
+
+    # Test hover events when active (should not trigger hover)
+    label.set_active(True)
+    hovered_node = None
+    label.enterEvent(QEnterEvent(QPoint(0, 0), QPoint(0, 0), QPoint(0, 0)))
+    # Should not set is_hovered or emit when active
+    assert label.is_hovered is False
+    assert hovered_node is None
+
+    # Reset to inactive for click tests
+    label.set_active(False)
+
     # Test click emission
     # Mock emission
     emitted_node = None
@@ -384,6 +417,17 @@ def test_analysis_board_full_flow(app: object) -> None:
     # resizeEvent should trigger and place scrollbar
     sb_geo = board_widget.overlay_scrollbar.geometry()
     assert sb_geo.x() == 500 - 12
+
+    # 6. Test _clear_all_hover_states (lines 957-958)
+    # Manually set a label to hovered state
+    if node_e4 in board_widget.node_to_label:
+        label = board_widget.node_to_label[node_e4]
+        label.is_hovered = True
+        label._update_style()
+        assert label.is_hovered is True
+        # Now clear all hover states
+        board_widget._clear_all_hover_states()
+        assert label.is_hovered is False
 
 
 def test_expand_button(app: object) -> None:
