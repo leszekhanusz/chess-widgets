@@ -78,11 +78,8 @@ STYLE_MOVE_LABEL = f"""
         border-radius: 3px;
         font-size: 15px;
     }}
-    QLabel:hover {{
-        background-color: {COLOR_BG_ROW_HOVER};
-        color: #1F1F1F;
-    }}
 """
+
 
 STYLE_MOVE_NUMBER = f"""
     color: {COLOR_TEXT_NUMBER};
@@ -109,6 +106,13 @@ STYLE_MOVE_LABEL_ACTIVE = """
         background-color: #3d8cd7 !important;
         color: #ffffff !important;
     }
+"""
+
+STYLE_MOVE_LABEL_HOVER = f"""
+    QLabel {{
+        background-color: {COLOR_BG_ROW_HOVER};
+        color: #1F1F1F;
+    }}
 """
 
 
@@ -148,25 +152,49 @@ class MoveLabel(QLabel):
         self.node = node
         self.base_style = base_style
         self.is_active = False
+        self.is_hovered = False
         self.setStyleSheet(self.base_style)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        # Enable mouse tracking to receive enter/leave events
+        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if not self.is_active:
             self.clicked.emit(self.node)
 
+    def enterEvent(self, event: QEnterEvent) -> None:
+        """Handle mouse enter - apply hover styling."""
+        if not self.is_active:
+            self.is_hovered = True
+            self._update_style()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event: QEvent) -> None:
+        """Handle mouse leave - remove hover styling."""
+        if self.is_hovered:
+            self.is_hovered = False
+            self._update_style()
+        super().leaveEvent(event)
+
+    def _update_style(self) -> None:
+        """Update the stylesheet based on current state."""
+        if self.is_active:
+            # Active state takes precedence
+            self.setStyleSheet(self.base_style + STYLE_MOVE_LABEL_ACTIVE)
+        elif self.is_hovered:
+            # Apply hover style
+            self.setStyleSheet(self.base_style + STYLE_MOVE_LABEL_HOVER)
+        else:
+            # Normal state
+            self.setStyleSheet(self.base_style)
+
     def set_active(self, active: bool) -> None:
         self.is_active = active
         if active:
-            # Append active style to base style (or replace relevant parts)
-            # Using a simple concatenation or specific override
-            # We need to ensure the active style overrides the base style properties
-            # The simplest way is to append the active style string
-            self.setStyleSheet(self.base_style + STYLE_MOVE_LABEL_ACTIVE)
             self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
         else:
-            self.setStyleSheet(self.base_style)
             self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self._update_style()
 
 
 class MoveRowWidget(QFrame):
@@ -318,9 +346,6 @@ class InlineMovesWidget(QWidget):
                     border-radius: 3px;
                     padding: 1px 3px;
                 }}
-                QLabel:hover {{
-                    background-color: {COLOR_BG_ROW_HOVER};
-                }}
             """,
             )
             lbl.clicked.connect(self.move_clicked.emit)
@@ -386,9 +411,6 @@ class InlineMovesWidget(QWidget):
                     background-color: transparent;
                     border-radius: 3px;
                     padding: 1px 3px;
-                }}
-                QLabel:hover {{
-                    background-color: {COLOR_BG_ROW_HOVER};
                 }}
             """,
             )
@@ -476,9 +498,6 @@ class InlineMovesWidget(QWidget):
                     color: {COLOR_TEXT_DIM};
                     background-color: transparent;
                     border-radius: 3px;
-                }}
-                QLabel:hover {{
-                    background-color: {COLOR_BG_ROW_HOVER};
                 }}
                 """,
             )
@@ -903,6 +922,8 @@ class AnalysisBoardWidget(QScrollArea):
         """Hide scrollbar when mouse leaves the widget."""
         self.is_hovered = False
         self.scrollbar_hovered = False
+        # Clear all hover states when leaving the widget
+        self._clear_all_hover_states()
         self._update_scrollbar_style()
         super().leaveEvent(event)
 
@@ -911,11 +932,20 @@ class AnalysisBoardWidget(QScrollArea):
         if hasattr(self, "overlay_scrollbar") and obj == self.overlay_scrollbar:
             if event.type() == QEvent.Type.Enter:
                 self.scrollbar_hovered = True
+                # Clear all hover states when entering scrollbar
+                self._clear_all_hover_states()
                 self._update_scrollbar_style()
             elif event.type() == QEvent.Type.Leave:
                 self.scrollbar_hovered = False
                 self._update_scrollbar_style()
         return bool(super().eventFilter(obj, event))
+
+    def _clear_all_hover_states(self) -> None:
+        """Clear hover state from all MoveLabels."""
+        for label in self.node_to_label.values():
+            if label.is_hovered:
+                label.is_hovered = False
+                label._update_style()
 
     def _update_scrollbar_style(self) -> None:
         """Update scrollbar appearance based on hover state."""
