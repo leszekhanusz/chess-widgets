@@ -347,10 +347,20 @@ def test_analysis_board_full_flow(app: object) -> None:
     board_widget.keyPressEvent(event)
 
     # 4. Scrollbar hover events
+    # First, make the widget small enough that scrolling is needed
+    board_widget.resize(500, 100)
+    # Process events to ensure resize is applied
+    from PySide6.QtWidgets import QApplication
+
+    QApplication.processEvents()
+
     # Trigger enterEvent
     board_widget.enterEvent(QEnterEvent(QPoint(0, 0), QPoint(0, 0), QPoint(0, 0)))
     assert board_widget.is_hovered is True
-    assert board_widget.overlay_scrollbar.isVisible() is True
+    # Scrollbar should be visible only if scrolling is needed
+    native_sb = board_widget.verticalScrollBar()
+    scrolling_needed = native_sb.maximum() > native_sb.minimum()
+    assert board_widget.overlay_scrollbar.isVisible() == scrolling_needed
 
     # Trigger leaveEvent
     board_widget.leaveEvent(QEvent(QEvent.Type.Leave))
@@ -364,7 +374,7 @@ def test_analysis_board_full_flow(app: object) -> None:
     # Mock event filter call
     board_widget.eventFilter(board_widget.overlay_scrollbar, QEvent(QEvent.Type.Enter))
     assert board_widget.scrollbar_hovered is True
-    assert board_widget.overlay_scrollbar.isVisible() is True
+    assert board_widget.overlay_scrollbar.isVisible() == scrolling_needed
 
     board_widget.eventFilter(board_widget.overlay_scrollbar, QEvent(QEvent.Type.Leave))
     assert board_widget.scrollbar_hovered is False
