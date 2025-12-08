@@ -44,24 +44,33 @@ class MainWindow(QMainWindow):
         # Main horizontal layout
         main_layout = QHBoxLayout(central_widget)
         main_layout.setSpacing(10)
-        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setContentsMargins(0, 0, 0, 0)
 
-        # Left container for Board + Controls
+        # Left container for Board
         left_container = QWidget()
-        layout = QVBoxLayout(left_container)
-        layout.setSpacing(0)
-        layout.setContentsMargins(0, 0, 0, 0)
+        left_layout = QVBoxLayout(left_container)
+        left_layout.setSpacing(0)
+        left_layout.setContentsMargins(0, 0, 0, 0)
 
-        main_layout.addWidget(left_container, 0)  # Fixed size or preferred
+        main_layout.addWidget(left_container, stretch=1)
 
-        # Flip button at the top
-        flip_widget = QWidget()
-        flip_widget.setFixedHeight(50)  # Same height as nav bar
-        flip_layout = QHBoxLayout(flip_widget)
-        flip_layout.setContentsMargins(0, 0, 0, 10)
-        flip_layout.setSpacing(0)
+        # Right container for controls and moves
+        right_container = QWidget()
+        right_layout = QVBoxLayout(right_container)
+        right_layout.setSpacing(0)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_container.setFixedWidth(300)
 
-        # Stylesheet for flip button (same as navigation buttons)
+        main_layout.addWidget(right_container, stretch=0)
+
+        # Board
+        self.board_widget = BoardWidget()
+        self.board_widget.move_played.connect(self.on_move_played)
+        self.board_widget.move_undone.connect(self.on_move_undone)
+
+        left_layout.addWidget(self.board_widget)
+
+        # Stylesheet for buttons
         button_style = """
             QPushButton {
                 background-color: transparent;
@@ -84,6 +93,50 @@ class MainWindow(QMainWindow):
             }
         """
 
+        # Flip board button
+        flip_widget = self._make_flip_board_button(button_style)
+        right_layout.addWidget(flip_widget)
+
+        # Analysis widget
+        self.analysis_widget = self._make_analysis_widget()
+        right_layout.addWidget(self.analysis_widget)
+
+        # Navigation buttons bar
+        nav_widget = self._make_nav_widget(button_style)
+        right_layout.addWidget(nav_widget)
+
+        # Initialize attributes
+        self.flipped = False
+        self.player_color = chess.WHITE
+
+        self.game = chess.pgn.Game()
+        self.current_node: chess.pgn.GameNode = self.game
+
+        self.update_buttons()
+
+    def _make_analysis_widget(self) -> AnalysisBoardWidget:
+        analysis_widget = AnalysisBoardWidget()
+
+        # Give it a minimum width and let it expand
+        """
+        analysis_widget.setMinimumWidth(300)
+        analysis_widget.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
+        """
+
+        analysis_widget.move_clicked.connect(self.on_analysis_move_clicked)
+
+        return analysis_widget
+
+    def _make_flip_board_button(self, button_style: str) -> QWidget:
+        # Flip button at the top
+        flip_widget = QWidget()
+        flip_widget.setFixedHeight(50)  # Same height as nav bar
+        flip_layout = QHBoxLayout(flip_widget)
+        flip_layout.setContentsMargins(0, 0, 0, 10)
+        flip_layout.setSpacing(0)
+
         # Flip icon using standard Unicode symbol
         self.flip_btn = QPushButton("⇅ Flip Board")
         flip_font = QFont(self.icon_font)
@@ -100,12 +153,9 @@ class MainWindow(QMainWindow):
         flip_layout.addWidget(self.flip_btn)
         flip_layout.addStretch()
 
-        layout.addWidget(flip_widget)
+        return flip_widget
 
-        # Board
-        self.board_widget = BoardWidget()
-        layout.addWidget(self.board_widget)
-
+    def _make_nav_widget(self, button_style: str) -> QWidget:
         # Navigation Bar
         nav_widget = QWidget()
         nav_widget.setFixedHeight(50)  # Restricted height
@@ -159,42 +209,21 @@ class MainWindow(QMainWindow):
         nav_layout.addWidget(self.btn_next, 1)
         nav_layout.addWidget(self.btn_last, 1)
 
-        layout.addWidget(nav_widget)
-
-        # Right side: Analysis Board
-        self.analysis_widget = AnalysisBoardWidget()
-        self.analysis_widget.move_clicked.connect(self.on_analysis_move_clicked)
-        # Give it a minimum width and let it expand
-        self.analysis_widget.setMinimumWidth(300)
-        self.analysis_widget.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
-        )
-
-        main_layout.addWidget(self.analysis_widget, 1)
-
-        self.board_widget.move_played.connect(self.on_move_played)
-        self.board_widget.move_undone.connect(self.on_move_undone)
-
-        self.flipped = False
-        self.player_color = chess.WHITE
-
-        self.game = chess.pgn.Game()
-        self.current_node: chess.pgn.GameNode = self.game
-
-        self.update_buttons()
+        return nav_widget
 
     def resizeEvent(self, event: QResizeEvent) -> None:
         """Maintain aspect ratio to keep board square and fill horizontal space."""
         super().resizeEvent(event)
+        # Calculate the required width based on height
+        # Width includes the board + 300px for the right column
+        height = self.height()
 
-        # Adjust height if needed (tolerance to avoid infinite loops)
-        # With horizontal layout, we might not need this strict resizing anymore
-        # primarily for the board aspect ratio.
-        # But we still want board to be square.
-        # self.board_widget has a fixed aspect ratio usually?
-        # Let's simplify and remove the strict window resizing logic
-        # which might conflict with horizontal layout
-        pass
+        required_height = max(height, 300)
+        required_width = required_height + 300
+
+        # Adjust width if needed (tolerance to avoid infinite loops)
+        if abs(self.width() - required_width) > 2:
+            self.resize(int(required_width), required_height)
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         """Handle mouse wheel events to navigate moves."""
