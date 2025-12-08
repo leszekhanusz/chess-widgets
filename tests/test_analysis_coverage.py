@@ -400,3 +400,76 @@ def test_scrollbar_safeguard(app: object) -> None:
     board_widget._update_scrollbar_style()
     # Trigger event that calls it
     board_widget.enterEvent(QEnterEvent(QPoint(0, 0), QPoint(0, 0), QPoint(0, 0)))
+
+
+def test_set_game_and_clear(app: object) -> None:
+    """Test set_game and clear methods of AnalysisBoardWidget."""
+    import io
+    import textwrap
+
+    # Create initial game
+    pgn1 = textwrap.dedent(
+        """
+    [Event "Test1"]
+    [Site "?"]
+    [Date "2024.01.01"]
+    [Round "?"]
+    [White "White"]
+    [Black "Black"]
+    [Result "*"]
+
+    1. e4 e5 2. Nf3 Nc6 *
+    """
+    )
+    game1 = chess.pgn.read_game(io.StringIO(pgn1))
+    assert game1 is not None
+
+    # Create widget with initial game
+    board_widget = AnalysisBoardWidget(game1)
+    board_widget.show()
+
+    # Verify initial game is loaded
+    assert board_widget.main_layout.count() > 0
+    node_e4 = game1.variations[0]
+    assert node_e4 in board_widget.node_to_label
+
+    # Set active node
+    board_widget.set_active_node(node_e4)
+    assert board_widget.active_node == node_e4
+
+    # Create second game
+    pgn2 = textwrap.dedent(
+        """
+    [Event "Test2"]
+    [Site "?"]
+    [Date "2024.01.02"]
+    [Round "?"]
+    [White "Player1"]
+    [Black "Player2"]
+    [Result "*"]
+
+    1. d4 d5 2. c4 *
+    """
+    )
+    game2 = chess.pgn.read_game(io.StringIO(pgn2))
+    assert game2 is not None
+
+    # Use set_game to replace the game (covers lines 714-715)
+    board_widget.set_game(game2)
+
+    # Verify old game is cleared and new game is loaded
+    assert node_e4 not in board_widget.node_to_label
+    node_d4 = game2.variations[0]
+    assert node_d4 in board_widget.node_to_label
+
+    # Verify active_node was reset
+    assert board_widget.active_node is None
+
+    # Test clear method directly (covers lines 720-730)
+    board_widget.clear()
+
+    # Verify everything is cleared
+    assert board_widget.main_layout.count() == 0
+    assert board_widget.active_node is None
+    assert len(board_widget.node_to_label) == 0
+    assert board_widget.scrollbar_hovered is False
