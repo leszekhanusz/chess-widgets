@@ -106,7 +106,7 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(nav_widget)
 
         # Create hover preview board (initially hidden)
-        self.hover_preview = BoardWidget()
+        self.hover_preview = BoardWidget(interactive=False)
         self.hover_preview.setParent(self)
         self.hover_preview.setFixedSize(120, 120)
         self.hover_preview.hide()

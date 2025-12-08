@@ -12,12 +12,24 @@ class BoardWidget(QWidget):
     """
     A PySide6 widget that displays a chess board and allows interaction.
 
+    Args:
+        parent: Optional parent widget.
+        board: Optional chess.Board instance. If None, a new board is created.
+        interactive: If True (default), the board allows user interaction
+            (clicking and dragging pieces). If False, the board is
+            display-only. This attribute can be modified at runtime to
+            enable/disable interactivity.
+
+    Attributes:
+        interactive: Boolean controlling whether user interaction is enabled.
+
     Signals:
-        move_played(chess.Move, dict): Emitted when a move is played on the board.
-            The first parameter is the chess.Move object.
+        move_played(chess.Move, dict): Emitted when a move is played on the
+            board. The first parameter is the chess.Move object.
             The second parameter is a dictionary containing move information:
-                - 'interactive' (bool): True if the move was made by user interaction,
-                  False if played programmatically via play_move().
+                - 'interactive' (bool): True if the move was made by user
+                  interaction, False if played programmatically via
+                  play_move().
         move_undone(chess.Move): Emitted when the last move is undone.
             The parameter is the chess.Move object that was undone.
     """
@@ -26,13 +38,17 @@ class BoardWidget(QWidget):
     move_undone = Signal(chess.Move)
 
     def __init__(
-        self, parent: Optional[QWidget] = None, board: Optional[chess.Board] = None
+        self,
+        parent: Optional[QWidget] = None,
+        board: Optional[chess.Board] = None,
+        interactive: bool = True,
     ):
         super().__init__(parent)
 
         self._board = board if board else chess.Board()
         self._renderer = Renderer()
         self._flipped = False
+        self.interactive = interactive
 
         # Interaction state
         self._selected_square: Optional[int] = None
@@ -198,6 +214,9 @@ class BoardWidget(QWidget):
                 )
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
+        if not self.interactive:
+            return
+
         if event.button() != Qt.MouseButton.LeftButton:
             return
 
@@ -232,6 +251,9 @@ class BoardWidget(QWidget):
             self._clear_selection()
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        if not self.interactive:
+            return
+
         square = self._pos_to_square(event.position())
         self._hover_square = square
 
@@ -245,6 +267,9 @@ class BoardWidget(QWidget):
             self.update()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if not self.interactive:
+            return
+
         if not self._is_dragging:
             return
 
