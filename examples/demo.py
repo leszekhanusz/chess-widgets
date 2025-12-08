@@ -6,8 +6,8 @@ from typing import Any, Dict
 
 import chess
 import chess.pgn
-from PySide6.QtCore import QTimer
-from PySide6.QtGui import QFont, QFontDatabase, QResizeEvent, QWheelEvent
+from PySide6.QtCore import QPoint, Qt, QTimer
+from PySide6.QtGui import QCursor, QFont, QFontDatabase, QResizeEvent, QWheelEvent
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -104,6 +104,18 @@ class MainWindow(QMainWindow):
         # Navigation buttons bar
         nav_widget = self._make_nav_widget(button_style)
         right_layout.addWidget(nav_widget)
+
+        # Create hover preview board (initially hidden)
+        self.hover_preview = BoardWidget()
+        self.hover_preview.setParent(self)
+        self.hover_preview.setFixedSize(120, 120)
+        self.hover_preview.hide()
+        self.hover_preview.setWindowFlags(
+            Qt.WindowType.ToolTip | Qt.WindowType.FramelessWindowHint
+        )
+        self.hover_preview.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        # Disable interaction on preview board
+        self.hover_preview.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
 
         # Initialize attributes
         self.flipped = False
@@ -289,9 +301,18 @@ class MainWindow(QMainWindow):
     def on_analysis_move_hovered(self, node: chess.pgn.ChildNode | None) -> None:
         """Handle hover on move in analysis widget."""
         if node is None:
-            print("No move hovered")
+            self.hover_preview.hide()
         else:
-            print(f"Move hovered: {node.san()}")
+            # Update preview board with the position after this move
+            self.hover_preview.set_board(node.board())
+
+            # Position the preview near the cursor
+            cursor_pos = QCursor.pos()
+            # Offset to the right and down a bit so it doesn't obscure the move
+            preview_pos = cursor_pos + QPoint(15, 15)
+            self.hover_preview.move(self.mapFromGlobal(preview_pos))
+            self.hover_preview.show()
+            self.hover_preview.raise_()
 
     def on_move_undone(self, move: chess.Move) -> None:
         print(f"Move undone: {move}")
