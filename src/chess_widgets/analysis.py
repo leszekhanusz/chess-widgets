@@ -922,14 +922,18 @@ class AnalysisBoardWidget(QScrollArea):
         if not hasattr(self, "overlay_scrollbar"):
             return
 
+        # Check if scrolling is actually needed
+        native_sb = self.verticalScrollBar()
+        scrolling_needed = native_sb.maximum() > native_sb.minimum()
+
         # Determine visibility and style
-        if self.scrollbar_hovered:
+        if self.scrollbar_hovered and scrolling_needed:
             # Full width handle when hovering scrollbar
             handle_margin = 0
             handle_width = 12
             color = "rgba(128, 128, 128, 0.6)"
             self.overlay_scrollbar.show()
-        elif self.is_hovered:
+        elif self.is_hovered and scrolling_needed:
             # Thinner handle (via margins) when hovering widget
             handle_margin = 2  # (12 - 8) / 2
             handle_width = 8
