@@ -140,6 +140,7 @@ def _is_linear_branch(node: chess.pgn.GameNode) -> bool:
 
 class MoveLabel(QLabel):
     clicked = Signal(object)  # Emits the node
+    hovered = Signal(object)  # Emits the node when hovered, None when unhovered
 
     def __init__(
         self,
@@ -167,6 +168,7 @@ class MoveLabel(QLabel):
         if not self.is_active:
             self.is_hovered = True
             self._update_style()
+            self.hovered.emit(self.node)
         super().enterEvent(event)
 
     def leaveEvent(self, event: QEvent) -> None:
@@ -174,6 +176,7 @@ class MoveLabel(QLabel):
         if self.is_hovered:
             self.is_hovered = False
             self._update_style()
+            self.hovered.emit(None)
         super().leaveEvent(event)
 
     def _update_style(self) -> None:
@@ -673,6 +676,7 @@ class TreeMovesWidget(QWidget):
 
 class AnalysisBoardWidget(QScrollArea):
     move_clicked = Signal(object)
+    move_hovered = Signal(object)  # Emits node when hovered, None when unhovered
 
     def __init__(
         self,
@@ -781,8 +785,7 @@ class AnalysisBoardWidget(QScrollArea):
                 current_row_widget.move_clicked.connect(self.move_clicked.emit)
                 self.main_layout.addWidget(current_row_widget)
                 # Register move labels
-                for lbl in current_row_widget.get_move_labels():
-                    self.node_to_label[lbl.node] = lbl
+                self._register_move_labels(current_row_widget.get_move_labels())
 
                 # If comment
                 if main_next.comment:
@@ -805,17 +808,20 @@ class AnalysisBoardWidget(QScrollArea):
                     self.main_layout.addWidget(tree_widget)
 
                     # Register move labels
-                    for lbl in tree_widget.get_move_labels():
-                        self.node_to_label[lbl.node] = lbl
+                    self._register_move_labels(tree_widget.get_move_labels())
 
             else:  # Black's turn
                 # Try to append to existing row
                 if current_row_widget and current_row_widget.black_node is None:
                     current_row_widget.set_black_move(main_next)
                     # Register the newly added black move label
-                    for lbl in current_row_widget.get_move_labels():
-                        if lbl.node == main_next:
-                            self.node_to_label[lbl.node] = lbl
+                    self._register_move_labels(
+                        [
+                            lbl
+                            for lbl in current_row_widget.get_move_labels()
+                            if lbl.node == main_next
+                        ]
+                    )
                 else:
                     # Create new row with empty white
                     current_row_widget = MoveRowWidget(
@@ -824,8 +830,7 @@ class AnalysisBoardWidget(QScrollArea):
                     current_row_widget.move_clicked.connect(self.move_clicked.emit)
                     self.main_layout.addWidget(current_row_widget)
                     # Register move labels
-                    for lbl in current_row_widget.get_move_labels():
-                        self.node_to_label[lbl.node] = lbl
+                    self._register_move_labels(current_row_widget.get_move_labels())
 
                 # If comment
                 if main_next.comment:
@@ -843,10 +848,15 @@ class AnalysisBoardWidget(QScrollArea):
                     self.main_layout.addWidget(tree_widget)
 
                     # Register move labels
-                    for lbl in tree_widget.get_move_labels():
-                        self.node_to_label[lbl.node] = lbl
+                    self._register_move_labels(tree_widget.get_move_labels())
 
             current_node = main_next
+
+    def _register_move_labels(self, labels: list[MoveLabel]) -> None:
+        """Register move labels and connect their signals."""
+        for lbl in labels:
+            self.node_to_label[lbl.node] = lbl
+            lbl.hovered.connect(self.move_hovered.emit)
 
     def add_annotation(self, text: str) -> None:
         lbl = QLabel(text)

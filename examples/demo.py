@@ -126,6 +126,7 @@ class MainWindow(QMainWindow):
         """
 
         analysis_widget.move_clicked.connect(self.on_analysis_move_clicked)
+        analysis_widget.move_hovered.connect(self.on_analysis_move_hovered)
 
         return analysis_widget
 
@@ -284,6 +285,13 @@ class MainWindow(QMainWindow):
         # Also need to check if we should trigger opponent move? Maybe not on review.
 
         self.update_buttons()
+
+    def on_analysis_move_hovered(self, node: chess.pgn.ChildNode | None) -> None:
+        """Handle hover on move in analysis widget."""
+        if node is None:
+            print("No move hovered")
+        else:
+            print(f"Move hovered: {node.san()}")
 
     def on_move_undone(self, move: chess.Move) -> None:
         print(f"Move undone: {move}")
