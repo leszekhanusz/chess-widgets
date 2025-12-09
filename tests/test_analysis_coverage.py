@@ -443,6 +443,7 @@ def test_expand_widget(app: object) -> None:
     event = QMouseEvent(
         QEvent.Type.MouseButtonPress,
         QPoint(0, 0),
+        QPoint(0, 0),
         Qt.MouseButton.LeftButton,
         Qt.MouseButton.LeftButton,
         Qt.KeyboardModifier.NoModifier,
