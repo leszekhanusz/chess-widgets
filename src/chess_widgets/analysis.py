@@ -3,13 +3,21 @@ from typing import Optional, cast
 
 import chess
 import chess.pgn
-from PySide6.QtCore import QEvent, QObject, Qt, Signal
-from PySide6.QtGui import QCursor, QEnterEvent, QKeyEvent, QMouseEvent, QResizeEvent
+from PySide6.QtCore import QEvent, QObject, QRect, Qt, Signal
+from PySide6.QtGui import (
+    QColor,
+    QCursor,
+    QEnterEvent,
+    QKeyEvent,
+    QMouseEvent,
+    QPainter,
+    QPen,
+    QResizeEvent,
+)
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
-    QPushButton,
     QScrollArea,
     QScrollBar,
     QVBoxLayout,
@@ -519,32 +527,88 @@ class InlineMovesWidget(QWidget):
                 labels.append(child)
         return labels
 
+    def set_collapsed(self, collapsed: bool) -> None:
+        """
+        If collapsed is True, show only the first move label and hide everything else.
+        If collapsed is False, show everything.
+        """
+        first_move_found = False
 
-class ExpandButton(QPushButton):
+        # We iterate over the layout items.
+        # FlowLayout items are reachable via count() and itemAt().
+        # However, calling child.setVisible() on widgets is usually enough if they
+        # are in the layout.
+
+        # Let's iterate over the children of content_widget directly
+        for child in self.content_widget.findChildren(
+            QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly
+        ):
+            if isinstance(child, MoveLabel) and not first_move_found:
+                # This is the first move
+                child.setVisible(True)
+                first_move_found = True
+            else:
+                # Everything else (comments, parens, subsequent moves)
+                child.setVisible(not collapsed)
+
+
+class ExpandWidget(QWidget):
+    toggled = Signal(bool)
+
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self.setCheckable(True)
-        self.setChecked(True)  # Expanded by default
-        self.setFixedSize(16, 16)
-        self.setStyleSheet(
-            """
-            QPushButton {
-                background-color: transparent;
-                border: none;
-                color: #888888;
-                font-size: 10px;
-            }
-            QPushButton:hover {
-                color: #4D4D4D;
-            }
-        """
-        )
-        self.setText("[−]")
-        self.clicked.connect(self.update_icon)
+        self.is_expanded = True
+        self.setFixedWidth(12)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
-    def update_icon(self, checked: bool) -> None:
-        self.setText("[−]" if checked else "[+]")
+        # Color configuration
+        self.color_icon = QColor("#888888")
+        self.color_line = QColor("#E0E0E0")  # Matches COLOR_VARIATION_BAR
+        self.color_hover = QColor("#4D4D4D")
+
+        self.is_hovered = False
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        self.is_expanded = not self.is_expanded
+        self.toggled.emit(self.is_expanded)
+        self.update()
+
+    def enterEvent(self, event: QEnterEvent) -> None:
+        self.is_hovered = True
+        self.update()
+
+    def leaveEvent(self, event: QEvent) -> None:
+        self.is_hovered = False
+        self.update()
+
+    def paintEvent(self, event: QEvent) -> None:
+        painter = QPainter(self)
+
+        # Draw vertical line
+        icon_height = 28
+
+        if self.is_expanded:
+            pen_line = QPen(self.color_line)
+            pen_line.setWidth(1)
+            painter.setPen(pen_line)
+
+            # Line from bottom of icon to bottom of widget
+            line_cx = self.width() // 2
+            line_vertical_margin = 4
+            line_cy = icon_height + line_vertical_margin
+            painter.drawLine(
+                line_cx, line_cy, line_cx, self.height() - line_vertical_margin
+            )
+
+        # Set pen icon
+        pen_icon = QPen(self.color_hover if self.is_hovered else self.color_icon)
+        painter.setPen(pen_icon)
+
+        # Draw icon text
+        text = "[−]" if self.is_expanded else "[+]"
+        painter.drawText(
+            QRect(0, 0, self.width(), icon_height), Qt.AlignmentFlag.AlignCenter, text
+        )
 
 
 class VariationBranchWidget(QWidget):
@@ -573,8 +637,10 @@ class VariationBranchWidget(QWidget):
         self.header_layout = QHBoxLayout(self.header_widget)
         self.header_layout.setContentsMargins(0, 0, 0, 0)
         self.header_layout.setSpacing(2)
+        # Align to top so ExpandWidget stays at the top even if wrapped lines
+        self.header_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        self.expand_btn: Optional[ExpandButton] = None
+        self.expand_btn: Optional[ExpandWidget] = None
         self.sub_tree: Optional[QWidget] = None  # Will be TreeMovesWidget
 
         # Inline moves for this linear segment
@@ -585,15 +651,19 @@ class VariationBranchWidget(QWidget):
         self.inline_widget.branch_encountered.connect(self.on_branch_encountered)
 
         if self.collapsible:
-            self.expand_btn = ExpandButton()
+            self.expand_btn = ExpandWidget()
             self.expand_btn.toggled.connect(self.on_toggle)
-            self.header_layout.insertWidget(0, self.expand_btn)
+            self.header_layout.addWidget(self.expand_btn)
 
         self.header_layout.addWidget(self.inline_widget)
         self.main_layout.addWidget(self.header_widget)
 
         # Now populate, so signals can be emitted
         self.inline_widget.populate_linear(start_node)
+
+        # If collapsible, initially collapsed?
+        # ExpandWidget defaults to is_expanded=True.
+        # So we should be expanded by default. Default is fine.
 
     def on_branch_encountered(self, node: chess.pgn.ChildNode) -> None:
         # We hit a complex branch at `node`.
@@ -610,9 +680,18 @@ class VariationBranchWidget(QWidget):
 
         self.main_layout.addWidget(self.sub_tree)
 
+        # Sync state with expand button if exists
+        if self.expand_btn and not self.expand_btn.is_expanded:
+            self.sub_tree.setVisible(False)
+
     def on_toggle(self, checked: bool) -> None:
+        # "checked" means "expanded" in our ExpandWidget logic
+        is_expanded = checked
         if self.sub_tree:
-            self.sub_tree.setVisible(checked)
+            self.sub_tree.setVisible(is_expanded)
+
+        # Determine collapsed state for inline widget (inverse of expanded)
+        self.inline_widget.set_collapsed(not is_expanded)
 
     def get_move_labels(self) -> list[MoveLabel]:
         labels = self.inline_widget.get_move_labels()
@@ -632,7 +711,7 @@ class TreeMovesWidget(QWidget):
     ) -> None:
         super().__init__(parent)
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(10, 0, 0, 0)  # Indent for the tree level
+        self.main_layout.setContentsMargins(20, 0, 0, 0)  # Indent for the tree level
         self.main_layout.setSpacing(2)
 
         self.branches = []

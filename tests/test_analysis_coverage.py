@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QLabel
 
 from chess_widgets.analysis import (
     AnalysisBoardWidget,
-    ExpandButton,
+    ExpandWidget,
     InlineMovesWidget,
     MoveLabel,
     VariationBranchWidget,
@@ -430,19 +430,28 @@ def test_analysis_board_full_flow(app: object) -> None:
         assert label.is_hovered is False
 
 
-def test_expand_button(app: object) -> None:
-    """Test ExpandButton toggling."""
-    btn = ExpandButton()
-    assert btn.isChecked() is True
-    assert btn.text() == "[−]"
+def test_expand_widget(app: object) -> None:
+    """Test ExpandWidget toggling."""
+    widget = ExpandWidget()
+    assert widget.is_expanded is True
+    # Can't check text directly as it's painted, but we can check state
 
-    btn.click()  # Toggles to False
-    assert btn.isChecked() is False
-    assert btn.text() == "[+]"
+    # Simulate click
+    from PySide6.QtCore import QPoint, Qt
+    from PySide6.QtGui import QMouseEvent
 
-    btn.click()
-    assert btn.isChecked() is True
-    assert btn.text() == "[−]"
+    event = QMouseEvent(
+        QEvent.Type.MouseButtonPress,
+        QPoint(0, 0),
+        Qt.MouseButton.LeftButton,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    widget.mousePressEvent(event)  # Toggles to False
+    assert widget.is_expanded is False
+
+    widget.mousePressEvent(event)  # Toggles back to True
+    assert widget.is_expanded is True
 
 
 def test_scrollbar_safeguard(app: object) -> None:
