@@ -624,23 +624,37 @@ class VariationBranchWidget(QWidget):
         self.start_node = start_node
         self.collapsible = collapsible
 
-        # Main Layout: Vertical.
-        # Row 1: Header (Expander + InlineMoves)
-        # Row 2: Sub-tree (TreeMovesWidget)
+        # Main Layout: Horizontal for ExpandWidget + Content
+        # Content Layout: Vertical for Header + Subtree
 
-        self.main_layout = QVBoxLayout(self)
+        self.main_layout = QHBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
+        self.main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # Header
+        self.expand_btn: Optional[ExpandWidget] = None
+
+        if self.collapsible:
+            self.expand_btn = ExpandWidget()
+            self.expand_btn.toggled.connect(self.on_toggle)
+            self.main_layout.addWidget(self.expand_btn)
+
+        # Content container (Vertical)
+        self.content_container = QWidget()
+        self.content_layout = QVBoxLayout(self.content_container)
+        self.content_layout.setContentsMargins(0, 0, 0, 0)
+        self.content_layout.setSpacing(0)
+
+        self.main_layout.addWidget(self.content_container, 1)
+
+        # Header (Inline Moves)
         self.header_widget = QWidget()
         self.header_layout = QHBoxLayout(self.header_widget)
         self.header_layout.setContentsMargins(0, 0, 0, 0)
         self.header_layout.setSpacing(2)
-        # Align to top so ExpandWidget stays at the top even if wrapped lines
+        # Align to top so inline moves stay at the top
         self.header_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        self.expand_btn: Optional[ExpandWidget] = None
         self.sub_tree: Optional[QWidget] = None  # Will be TreeMovesWidget
 
         # Inline moves for this linear segment
@@ -650,13 +664,8 @@ class VariationBranchWidget(QWidget):
         self.inline_widget.move_clicked.connect(self.move_clicked.emit)
         self.inline_widget.branch_encountered.connect(self.on_branch_encountered)
 
-        if self.collapsible:
-            self.expand_btn = ExpandWidget()
-            self.expand_btn.toggled.connect(self.on_toggle)
-            self.header_layout.addWidget(self.expand_btn)
-
         self.header_layout.addWidget(self.inline_widget)
-        self.main_layout.addWidget(self.header_widget)
+        self.content_layout.addWidget(self.header_widget)
 
         # Now populate, so signals can be emitted
         self.inline_widget.populate_linear(start_node)
@@ -678,7 +687,7 @@ class VariationBranchWidget(QWidget):
         self.sub_tree = TreeMovesWidget(node.variations, collapsible=self.collapsible)
         self.sub_tree.move_clicked.connect(self.move_clicked.emit)
 
-        self.main_layout.addWidget(self.sub_tree)
+        self.content_layout.addWidget(self.sub_tree)
 
         # Sync state with expand button if exists
         if self.expand_btn and not self.expand_btn.is_expanded:
@@ -711,7 +720,7 @@ class TreeMovesWidget(QWidget):
     ) -> None:
         super().__init__(parent)
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(20, 0, 0, 0)  # Indent for the tree level
+        self.main_layout.setContentsMargins(10, 0, 0, 0)  # Indent for the tree level
         self.main_layout.setSpacing(2)
 
         self.branches = []
