@@ -37,6 +37,8 @@ class BoardWidget(QWidget):
     move_played = Signal(chess.Move, dict)
     move_undone = Signal(chess.Move)
 
+    animation_increment = 0.05
+
     def __init__(
         self,
         parent: Optional[QWidget] = None,
@@ -473,7 +475,7 @@ class BoardWidget(QWidget):
         self.update()
 
     def _update_animation(self) -> None:
-        self._anim_progress += 0.05  # Adjust speed
+        self._anim_progress += self.animation_increment  # Adjust speed
         if self._anim_progress >= 1.0:
             self._anim_progress = 1.0
             self._anim_timer.stop()

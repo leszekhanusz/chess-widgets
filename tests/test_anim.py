@@ -16,7 +16,7 @@ def test_animation(qtbot: QtBot) -> None:
     widget.play_move(move, animate=True)
 
     # Wait for animation to complete (approx 1000ms safe margin)
-    qtbot.wait(1000)
+    qtbot.wait(50)
 
     # Verify move was made on board
     assert widget._board.peek() == move
