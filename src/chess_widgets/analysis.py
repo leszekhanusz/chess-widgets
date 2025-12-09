@@ -294,17 +294,6 @@ class InlineMovesWidget(QWidget):
         super().__init__(parent)
         self.stop_on_complex_branch = stop_on_complex_branch
 
-        # Indentation line
-        self.indent_bar = QFrame(self)
-        self.indent_bar.setStyleSheet(
-            f"background-color: {COLOR_VARIATION_BAR}; width: 2px;"
-        )
-        self.indent_bar.setFixedWidth(2)
-        # If we are stopping on complex branch (meaning we are part of a tree),
-        # the indentation might be handled by the Tree/Branch widget, but
-        # currently InlineMovesWidget always has an indent bar.
-        # In the new design, the TreeMovesWidget might nest these.
-
         # Container for flow content
         self.content_widget = QWidget()
         self.content_layout = FlowLayout(
@@ -315,7 +304,6 @@ class InlineMovesWidget(QWidget):
         self.main_layout = QHBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(5)
-        self.main_layout.addWidget(self.indent_bar)
         self.main_layout.addWidget(self.content_widget, 1)
 
         if not defer_populate:
@@ -551,12 +539,12 @@ class ExpandButton(QPushButton):
             }
         """
         )
-        # We'll draw the triangle manually or use text. Text "▼" / "▶" is easiest.
-        self.setText("▼")
+        self.setText("[−]")
         self.clicked.connect(self.update_icon)
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
     def update_icon(self, checked: bool) -> None:
-        self.setText("▼" if checked else "▶")
+        self.setText("[−]" if checked else "[+]")
 
 
 class VariationBranchWidget(QWidget):
@@ -596,18 +584,10 @@ class VariationBranchWidget(QWidget):
         self.inline_widget.move_clicked.connect(self.move_clicked.emit)
         self.inline_widget.branch_encountered.connect(self.on_branch_encountered)
 
-        # We don't know yet if we need an expand button until we see if
-        # there's a sub-tree.
-        # But we need to insert the inline widget first.
-        # However, to place the button to the LEFT of everything, we insert it now?
-        # Actually, we can add it later at index 0 if needed, or just reserve space.
-        # For now, we just add the inline widget.
-
         if self.collapsible:
-            # Placeholder or always create?
-            # Let's create it hidden initially?
-            # Or wait until we know if we have children.
-            pass
+            self.expand_btn = ExpandButton()
+            self.expand_btn.toggled.connect(self.on_toggle)
+            self.header_layout.insertWidget(0, self.expand_btn)
 
         self.header_layout.addWidget(self.inline_widget)
         self.main_layout.addWidget(self.header_widget)
@@ -620,11 +600,6 @@ class VariationBranchWidget(QWidget):
         # `node` is the last linear move. `node.variations` has the branches.
         # We need to create a TreeMovesWidget for these variations
         # and add it to our body.
-
-        if self.collapsible:
-            self.expand_btn = ExpandButton()
-            self.expand_btn.toggled.connect(self.on_toggle)
-            self.header_layout.insertWidget(0, self.expand_btn)
 
         # Create sub-tree
         # "Everytime there is a variation possible from the main line,

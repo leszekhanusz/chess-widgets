@@ -434,15 +434,15 @@ def test_expand_button(app: object) -> None:
     """Test ExpandButton toggling."""
     btn = ExpandButton()
     assert btn.isChecked() is True
-    assert btn.text() == "▼"
+    assert btn.text() == "[−]"
 
     btn.click()  # Toggles to False
     assert btn.isChecked() is False
-    assert btn.text() == "▶"
+    assert btn.text() == "[+]"
 
     btn.click()
     assert btn.isChecked() is True
-    assert btn.text() == "▼"
+    assert btn.text() == "[−]"
 
 
 def test_scrollbar_safeguard(app: object) -> None:
