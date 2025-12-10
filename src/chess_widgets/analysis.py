@@ -146,7 +146,48 @@ def _is_linear_branch(node: chess.pgn.GameNode) -> bool:
     return True
 
 
-class MoveLabel(QLabel):
+class ExpandButton(QWidget):
+    toggled = Signal(bool)
+
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self.is_expanded = True
+        self.setFixedWidth(12)
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
+        # Color configuration
+        self.color_icon = QColor("#888888")
+        self.color_hover = QColor("#4D4D4D")
+
+        self.is_hovered = False
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        self.is_expanded = not self.is_expanded
+        self.toggled.emit(self.is_expanded)
+        self.update()
+
+    def enterEvent(self, event: QEnterEvent) -> None:
+        self.is_hovered = True
+        self.update()
+
+    def leaveEvent(self, event: QEvent) -> None:
+        self.is_hovered = False
+        self.update()
+
+    def paintEvent(self, event: QEvent) -> None:
+        painter = QPainter(self)
+
+        # Set pen icon
+        pen_icon = QPen(self.color_hover if self.is_hovered else self.color_icon)
+        painter.setPen(pen_icon)
+
+        # Draw icon text
+        text = "[−]" if self.is_expanded else "[+]"
+        # Center vertically
+        painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, text)
+
+
+class MoveLabel(QFrame):
     clicked = Signal(object)  # Emits the node
     hovered = Signal(object)  # Emits the node when hovered, None when unhovered
 
@@ -156,16 +197,35 @@ class MoveLabel(QLabel):
         node: chess.pgn.ChildNode,
         base_style: str,
         parent: Optional[QWidget] = None,
+        start_widget: Optional[QWidget] = None,
     ) -> None:
-        super().__init__(text, parent)
+        super().__init__(parent)
         self.node = node
         self.base_style = base_style
         self.is_active = False
         self.is_hovered = False
-        self.setStyleSheet(self.base_style)
+
+        self.content_layout = QHBoxLayout(self)
+        self.content_layout.setContentsMargins(0, 0, 0, 0)
+        self.content_layout.setSpacing(2)
+
+        if start_widget:
+            self.content_layout.addSpacing(5)
+            self.content_layout.addWidget(start_widget)
+
+        self.label = QLabel(text)
+        self.content_layout.addWidget(self.label)
+
+        self._update_style()
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         # Enable mouse tracking to receive enter/leave events
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+
+    def text(self) -> str:
+        return str(self.label.text())
+
+    def setText(self, text: str) -> None:
+        self.label.setText(text)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if not self.is_active:
@@ -189,15 +249,38 @@ class MoveLabel(QLabel):
 
     def _update_style(self) -> None:
         """Update the stylesheet based on current state."""
+        # We need to target QLabel inside the frame for text color/bg
+        # The frame itself can also have bg.
+        # existing STYLE_MOVE_LABEL targets QLabel.
+        # Depending on how complex the styles are, we might need to adjust them.
+        # STYLE_MOVE_LABEL = "QLabel { ... }"
+        # We want the style to apply to self (QFrame) OR the child label?
+        # The visual design was a label with padding.
+        # If we use QFrame, we should apply the style to the *label* or the *frame*?
+        # If we act as a container, the hover effect should probably be on
+        # the text label? BUT the user wants "MoveRowWidget and MoveLabel to
+        # stay generic". If we put ExpandButton INSIDE MoveLabel, should the
+        # button highlight when MoveLabel hovers? Usually checking [move] ->
+        # highlights move. Clicking [+] -> expands/collapses.
+        # The [+] should probably NOT trigger the move click.
+        # ExpandButton handles its own click.
+
+        # Let's apply the style to the inner QLabel to match previous behavior
+        # But wait, previous behavior was `self.setStyleSheet`. `MoveLabel` IS a
+        # `QLabel`. Now `MoveLabel` IS a `QFrame`.
+        # If we apply `QLabel { ... }` to `QFrame`, it cascades to children `QLabel`.
+
+        style = self.base_style
         if self.is_active:
-            # Active state takes precedence
-            self.setStyleSheet(self.base_style + STYLE_MOVE_LABEL_ACTIVE)
+            style += STYLE_MOVE_LABEL_ACTIVE
         elif self.is_hovered:
-            # Apply hover style
-            self.setStyleSheet(self.base_style + STYLE_MOVE_LABEL_HOVER)
-        else:
-            # Normal state
-            self.setStyleSheet(self.base_style)
+            style += STYLE_MOVE_LABEL_HOVER
+
+        # The styles assume "QLabel".
+        # Example:
+        # STYLE_MOVE_LABEL_HOVER = "QLabel { background-color: ... }"
+        # This will work fine applied to the QFrame parent, affecting the child QLabel.
+        self.setStyleSheet(style)
 
     def set_active(self, active: bool) -> None:
         self.is_active = active
@@ -217,6 +300,8 @@ class MoveRowWidget(QFrame):
         white_node: Optional[chess.pgn.ChildNode] = None,
         black_node: Optional[chess.pgn.ChildNode] = None,
         parent: Optional[QWidget] = None,
+        start_widget_white: Optional[QWidget] = None,
+        start_widget_black: Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent)
         self.white_node = white_node
@@ -236,44 +321,74 @@ class MoveRowWidget(QFrame):
         layout.addWidget(self.lbl_number, 13)
 
         # White Move (43.5%)
-        self.lbl_white: QLabel
+        self.lbl_white: QWidget  # Can be MoveLabel (QFrame) or QLabel
         if white_node:
-            self.lbl_white = MoveLabel(white_node.san(), white_node, STYLE_MOVE_LABEL)
+            self.lbl_white = MoveLabel(
+                white_node.san(),
+                white_node,
+                STYLE_MOVE_LABEL,
+                start_widget=start_widget_white,
+            )
             self.lbl_white.clicked.connect(self.move_clicked.emit)
         else:
             self.lbl_white = QLabel("...")
             self.lbl_white.setStyleSheet(f"color: {COLOR_TEXT_DIM}; padding: 2px 5px;")
-        self.lbl_white.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        )
+
+        # MoveLabel is now a QFrame, assume typical usage.
+        # QLabel has setAlignment, QFrame does not.
+        # We need to align the widget in the layout, not call method on it if
+        # it's not a label.
+        # However, layout.addWidget default behavior stretches.
+        # MoveLabel's internal layout has alignment?
+        # It's cleaner if we don't rely on setAlignment for MoveLabel.
+        # If lbl_white IS a QLabel (placeholder), we set alignment.
+        if isinstance(self.lbl_white, QLabel) and not isinstance(
+            self.lbl_white, MoveLabel
+        ):
+            self.lbl_white.setAlignment(
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+            )
 
         layout.addWidget(self.lbl_white, 43)
 
         # Black Move (43.5%)
-        self.lbl_black: QLabel
+        self.lbl_black: QWidget
         if black_node:
-            self.lbl_black = MoveLabel(black_node.san(), black_node, STYLE_MOVE_LABEL)
+            self.lbl_black = MoveLabel(
+                black_node.san(),
+                black_node,
+                STYLE_MOVE_LABEL,
+                start_widget=start_widget_black,
+            )
             self.lbl_black.clicked.connect(self.move_clicked.emit)
         else:
             self.lbl_black = QLabel("...")
             self.lbl_black.setStyleSheet(f"color: {COLOR_TEXT_DIM}; padding: 2px 5px;")
-        self.lbl_black.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        )
+
+        if isinstance(self.lbl_black, QLabel) and not isinstance(
+            self.lbl_black, MoveLabel
+        ):
+            self.lbl_black.setAlignment(
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+            )
 
         layout.addWidget(self.lbl_black, 43)
 
         # Styling
         self.setStyleSheet(STYLE_MOVE_ROW)
 
-    def set_black_move(self, node: chess.pgn.ChildNode) -> None:
+    def set_black_move(
+        self, node: chess.pgn.ChildNode, start_widget: Optional[QWidget] = None
+    ) -> None:
         # Replace the placeholder black label
         layout = cast(QHBoxLayout, self.layout())
         layout.removeWidget(self.lbl_black)
         self.lbl_black.deleteLater()
 
         self.black_node = node
-        self.lbl_black = MoveLabel(node.san(), node, STYLE_MOVE_LABEL)
+        self.lbl_black = MoveLabel(
+            node.san(), node, STYLE_MOVE_LABEL, start_widget=start_widget
+        )
         self.lbl_black.clicked.connect(self.move_clicked.emit)
         layout.addWidget(self.lbl_black, 43)
 
@@ -841,9 +956,31 @@ class AnalysisBoardWidget(QScrollArea):
             move_number = current_node.board().fullmove_number
 
             if is_white:
+                # Prepare expand button if needed
+                start_widget = None
+                tree_widget = None
+
+                if variations and self.collapsible:
+                    expand_btn = ExpandButton()
+                    start_widget = expand_btn
+
+                    # Create tree widget now so we can connect
+                    tree_widget = TreeMovesWidget(
+                        variations, collapsible=self.collapsible
+                    )
+                    tree_widget.move_clicked.connect(self.move_clicked.emit)
+
+                    # Connect toggle
+                    expand_btn.toggled.connect(tree_widget.setVisible)
+
+                    # Default state
+                    tree_widget.setVisible(expand_btn.is_expanded)
+
                 # Start new row
                 current_row_widget = MoveRowWidget(
-                    str(move_number), white_node=main_next
+                    str(move_number),
+                    white_node=main_next,
+                    start_widget_white=start_widget,
                 )
                 current_row_widget.move_clicked.connect(self.move_clicked.emit)
                 self.main_layout.addWidget(current_row_widget)
@@ -860,23 +997,42 @@ class AnalysisBoardWidget(QScrollArea):
 
                 # If there are variations for this White move (siblings of main_next)
                 if variations:
-                    # Switch to TreeMovesWidget for variations
-                    current_row_widget = None
+                    if not tree_widget:
+                        # Non-collapsible or created without button
+                        # (shouldn't happen if logic matches)
+                        tree_widget = TreeMovesWidget(
+                            variations, collapsible=self.collapsible
+                        )
+                        tree_widget.move_clicked.connect(self.move_clicked.emit)
 
-                    # Create TreeMovesWidget for all variations
-                    tree_widget = TreeMovesWidget(
-                        variations, collapsible=self.collapsible
-                    )
-                    tree_widget.move_clicked.connect(self.move_clicked.emit)
+                    current_row_widget = None
                     self.main_layout.addWidget(tree_widget)
 
                     # Register move labels
                     self._register_move_labels(tree_widget.get_move_labels())
 
             else:  # Black's turn
+                # Prepare expand button if needed
+                start_widget = None
+                tree_widget = None
+
+                if variations and self.collapsible:
+                    expand_btn = ExpandButton()
+                    start_widget = expand_btn
+
+                    tree_widget = TreeMovesWidget(
+                        variations, collapsible=self.collapsible
+                    )
+                    tree_widget.move_clicked.connect(self.move_clicked.emit)
+
+                    expand_btn.toggled.connect(tree_widget.setVisible)
+                    tree_widget.setVisible(expand_btn.is_expanded)
+
                 # Try to append to existing row
                 if current_row_widget and current_row_widget.black_node is None:
-                    current_row_widget.set_black_move(main_next)
+                    current_row_widget.set_black_move(
+                        main_next, start_widget=start_widget
+                    )
                     # Register the newly added black move label
                     self._register_move_labels(
                         [
@@ -888,7 +1044,10 @@ class AnalysisBoardWidget(QScrollArea):
                 else:
                     # Create new row with empty white
                     current_row_widget = MoveRowWidget(
-                        str(move_number), white_node=None, black_node=main_next
+                        str(move_number),
+                        white_node=None,
+                        black_node=main_next,
+                        start_widget_black=start_widget,
                     )
                     current_row_widget.move_clicked.connect(self.move_clicked.emit)
                     self.main_layout.addWidget(current_row_widget)
@@ -904,10 +1063,12 @@ class AnalysisBoardWidget(QScrollArea):
 
                 # If there are variations for this Black move
                 if variations:
-                    tree_widget = TreeMovesWidget(
-                        variations, collapsible=self.collapsible
-                    )
-                    tree_widget.move_clicked.connect(self.move_clicked.emit)
+                    if not tree_widget:
+                        tree_widget = TreeMovesWidget(
+                            variations, collapsible=self.collapsible
+                        )
+                        tree_widget.move_clicked.connect(self.move_clicked.emit)
+
                     self.main_layout.addWidget(tree_widget)
 
                     # Register move labels
