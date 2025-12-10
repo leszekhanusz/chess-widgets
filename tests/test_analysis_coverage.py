@@ -3,7 +3,7 @@ import chess.pgn
 import pytest
 from PySide6.QtCore import QEvent, QPoint, Qt
 from PySide6.QtGui import QEnterEvent, QKeyEvent
-from PySide6.QtWidgets import QLabel
+from PySide6.QtWidgets import QApplication, QLabel
 
 from chess_widgets.analysis import (
     AnalysisBoardWidget,
@@ -271,6 +271,57 @@ def test_variation_branch_and_tree(app: object) -> None:
     assert any("f4" in t for t in texts)
 
 
+def test_variation_branch_collapsed_then_populate(app: object) -> None:
+    """Test VariationBranchWidget when collapsed and then a branch is encountered."""
+    # This targets line 694: self.sub_tree.setVisible(False)
+
+    # Structure: 1. e4 (branch here)
+    # But VariationBranchWidget needs a linear start.
+    # So: 1. e4 -> linear.
+    # At e4, we have complex variations? No, VariationBranchWidget starts AT a node.
+    # It renders that node, then next, etc.
+    # Let's say we have:
+    # 1. e4 (linear)
+    # 2. e5 (complex branch: 3. Nf3 / 3. Nc6 / 3. d3)
+
+    game = chess.pgn.Game()
+    e4 = game.add_variation(chess.Move.from_uci("e2e4"))
+    e5 = e4.add_variation(chess.Move.from_uci("e7e5"))
+
+    e5.add_variation(chess.Move.from_uci("g1f3"))
+    e5.add_variation(chess.Move.from_uci("b1c3"))
+    e5.add_variation(chess.Move.from_uci("d2d3"))
+
+    # Create widget starting at e4. It should encounter branch at e5.
+    # But we want it to be COLLAPSED when it encounters the branch.
+
+    # 1. Create widget, collapsible=True
+    # It starts expanded.
+    branch_widget = VariationBranchWidget(e4, collapsible=True)
+
+    # 2. Collapse it BEFORE the inline widget encounters the branch.
+    # We manually simulate the expand button state change because on_toggle
+    # reacts to the signal but doesn't change the button state if called directly.
+    # And on_branch_encountered reads the BUTTON state.
+    branch_widget.on_toggle(False)
+    assert branch_widget.expand_btn is not None
+    branch_widget.expand_btn.is_expanded = False
+    assert branch_widget.expand_btn.is_expanded is False
+
+    # Now manually call on_branch_encountered with a fake node that has variations
+    # We need a node with variations to pass to TreeMovesWidget constructor
+    dummy_node = game.add_variation(chess.Move.from_uci("a2a3"))
+    dummy_node.add_variation(chess.Move.from_uci("a7a6"))  # var 0
+    dummy_node.add_variation(chess.Move.from_uci("h7h6"))  # var 1
+
+    # Calling this should trigger line 694
+    branch_widget.on_branch_encountered(dummy_node)
+
+    # Verify sub_tree was created and is HIDDEN
+    assert branch_widget.sub_tree is not None
+    assert branch_widget.sub_tree.isVisible() is False
+
+
 def test_inline_moves_stop_complex_no_defer(app: object) -> None:
     """Test InlineMovesWidget with stop_on_complex_branch=True & immediate populate."""
     game = chess.pgn.Game()
@@ -279,6 +330,37 @@ def test_inline_moves_stop_complex_no_defer(app: object) -> None:
     # Should hit line 292
     widget = InlineMovesWidget(node, stop_on_complex_branch=True, defer_populate=False)
     assert widget.layout() is not None
+
+
+def test_inline_moves_collapsed(app: object) -> None:
+    """Test InlineMovesWidget set_collapsed method."""
+    game = chess.pgn.Game()
+    node = game.add_variation(chess.Move.from_uci("e2e4"))
+    node.add_variation(chess.Move.from_uci("e7e5"))
+
+    # We need a widget with multiple items
+    widget = InlineMovesWidget(node)
+    widget.show()  # Must show widget for isVisible() to work on children
+
+    # By default, not collapsed
+    # Check visibility of children.
+    # e4 is first move. e5 is second.
+    # We can check specific move labels
+    labels = widget.get_move_labels()
+    assert len(labels) == 2
+
+    # Collapse
+    widget.set_collapsed(True)
+
+    # First label (e4) should be visible
+    # Second label (e5) should be hidden
+    assert labels[0].isVisible() is True
+    assert labels[1].isVisible() is False
+
+    # Uncollapse
+    widget.set_collapsed(False)
+    assert labels[0].isVisible() is True
+    assert labels[1].isVisible() is True
 
 
 def test_analysis_board_full_flow(app: object) -> None:
@@ -453,6 +535,28 @@ def test_expand_widget(app: object) -> None:
 
     widget.mousePressEvent(event)  # Toggles back to True
     assert widget.is_expanded is True
+
+    # Test enter/leave events (lines 577-582)
+    widget.enterEvent(QEnterEvent(QPoint(0, 0), QPoint(0, 0), QPoint(0, 0)))
+    assert widget.is_hovered is True
+
+    widget.leaveEvent(QEvent(QEvent.Type.Leave))
+    assert widget.is_hovered is False
+
+    # Test paint event (lines 585-609)
+    widget.repaint()
+    QApplication.processEvents()
+
+    # Manually trigger paint via render which is synchronous and reliable for coverage
+    from PySide6.QtGui import QPixmap
+
+    w = ExpandWidget()
+    w.resize(20, 100)
+    # We don't even need to show it if we render to a pixmap?
+    # Actually w.render() works on invisible widgets if we use QPainter
+    # redirection or just render(QPainter) or render(QPaintDevice).
+    target = QPixmap(100, 100)
+    w.render(target)
 
 
 def test_scrollbar_safeguard(app: object) -> None:
