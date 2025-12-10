@@ -904,7 +904,6 @@ class AnalysisBoardWidget(QScrollArea):
         self.main_layout = QVBoxLayout(self.container)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
-        self.main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         self.setWidget(self.container)
 
@@ -1119,6 +1118,8 @@ class AnalysisBoardWidget(QScrollArea):
                     self._register_move_labels(tree_widget.get_move_labels())
 
             current_node = main_next
+
+        self.main_layout.addStretch(1)
 
     def _register_move_labels(self, labels: list[MoveLabel]) -> None:
         """Register move labels and connect their signals."""
