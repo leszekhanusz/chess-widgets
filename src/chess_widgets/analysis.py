@@ -959,22 +959,29 @@ class AnalysisBoardWidget(QScrollArea):
                 # Prepare expand button if needed
                 start_widget = None
                 tree_widget = None
+                expand_btn = None
 
-                if variations and self.collapsible:
+                has_comment = bool(
+                    main_next.comment and _filter_comment(main_next.comment)
+                )
+                should_expand = (variations or has_comment) and self.collapsible
+
+                if should_expand:
                     expand_btn = ExpandButton()
                     start_widget = expand_btn
 
-                    # Create tree widget now so we can connect
-                    tree_widget = TreeMovesWidget(
-                        variations, collapsible=self.collapsible
-                    )
-                    tree_widget.move_clicked.connect(self.move_clicked.emit)
+                    if variations:
+                        # Create tree widget now so we can connect
+                        tree_widget = TreeMovesWidget(
+                            variations, collapsible=self.collapsible
+                        )
+                        tree_widget.move_clicked.connect(self.move_clicked.emit)
 
-                    # Connect toggle
-                    expand_btn.toggled.connect(tree_widget.setVisible)
+                        # Connect toggle
+                        expand_btn.toggled.connect(tree_widget.setVisible)
 
-                    # Default state
-                    tree_widget.setVisible(expand_btn.is_expanded)
+                        # Default state
+                        tree_widget.setVisible(expand_btn.is_expanded)
 
                 # Start new row
                 current_row_widget = MoveRowWidget(
@@ -991,7 +998,10 @@ class AnalysisBoardWidget(QScrollArea):
                 if main_next.comment:
                     filtered_comment = _filter_comment(main_next.comment)
                     if filtered_comment:
-                        self.add_annotation(filtered_comment)
+                        comment_lbl = self.add_annotation(filtered_comment)
+                        if expand_btn:
+                            expand_btn.toggled.connect(comment_lbl.setVisible)
+                            comment_lbl.setVisible(expand_btn.is_expanded)
                         # Close row because annotation breaks flow
                         current_row_widget = None
 
@@ -1015,18 +1025,25 @@ class AnalysisBoardWidget(QScrollArea):
                 # Prepare expand button if needed
                 start_widget = None
                 tree_widget = None
+                expand_btn = None
 
-                if variations and self.collapsible:
+                has_comment = bool(
+                    main_next.comment and _filter_comment(main_next.comment)
+                )
+                should_expand = (variations or has_comment) and self.collapsible
+
+                if should_expand:
                     expand_btn = ExpandButton()
                     start_widget = expand_btn
 
-                    tree_widget = TreeMovesWidget(
-                        variations, collapsible=self.collapsible
-                    )
-                    tree_widget.move_clicked.connect(self.move_clicked.emit)
+                    if variations:
+                        tree_widget = TreeMovesWidget(
+                            variations, collapsible=self.collapsible
+                        )
+                        tree_widget.move_clicked.connect(self.move_clicked.emit)
 
-                    expand_btn.toggled.connect(tree_widget.setVisible)
-                    tree_widget.setVisible(expand_btn.is_expanded)
+                        expand_btn.toggled.connect(tree_widget.setVisible)
+                        tree_widget.setVisible(expand_btn.is_expanded)
 
                 # Try to append to existing row
                 if current_row_widget and current_row_widget.black_node is None:
@@ -1058,7 +1075,10 @@ class AnalysisBoardWidget(QScrollArea):
                 if main_next.comment:
                     filtered_comment = _filter_comment(main_next.comment)
                     if filtered_comment:
-                        self.add_annotation(filtered_comment)
+                        comment_lbl = self.add_annotation(filtered_comment)
+                        if expand_btn:
+                            expand_btn.toggled.connect(comment_lbl.setVisible)
+                            comment_lbl.setVisible(expand_btn.is_expanded)
                         current_row_widget = None
 
                 # If there are variations for this Black move
@@ -1082,11 +1102,12 @@ class AnalysisBoardWidget(QScrollArea):
             self.node_to_label[lbl.node] = lbl
             lbl.hovered.connect(self.move_hovered.emit)
 
-    def add_annotation(self, text: str) -> None:
+    def add_annotation(self, text: str) -> QLabel:
         lbl = QLabel(text)
         lbl.setWordWrap(True)
         lbl.setStyleSheet(STYLE_ANNOTATION)
         self.main_layout.addWidget(lbl)
+        return lbl
 
     def set_active_node(self, node: chess.pgn.GameNode) -> None:
         """Set the active node and update the visual highlighting."""

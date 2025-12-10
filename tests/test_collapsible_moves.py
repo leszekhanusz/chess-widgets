@@ -79,6 +79,7 @@ def test_collapsible_moves(app: object) -> None:
     event = QMouseEvent(
         QMouseEvent.Type.MouseButtonPress,
         QPoint(0, 0),
+        QPoint(0, 0),
         Qt.MouseButton.LeftButton,
         Qt.MouseButton.LeftButton,
         Qt.KeyboardModifier.NoModifier,
@@ -141,9 +142,80 @@ def test_collapsible_moves_black(app: object) -> None:
     event = QMouseEvent(
         QMouseEvent.Type.MouseButtonPress,
         QPoint(0, 0),
+        QPoint(0, 0),
         Qt.MouseButton.LeftButton,
         Qt.MouseButton.LeftButton,
         Qt.KeyboardModifier.NoModifier,
     )
     expand_btn.mousePressEvent(event)
     assert tree_widget.isVisible() is False
+
+
+def test_collapsible_moves_with_comment(app: object) -> None:
+    """Test that expanding/collapsing also hides/shows comments."""
+    game = chess.pgn.Game()
+    e4 = game.add_variation(chess.Move.from_uci("e2e4"))
+    e4.comment = "Best by test."
+    _ = game.add_variation(chess.Move.from_uci("d2d4"))
+
+    board_widget = AnalysisBoardWidget(game, collapsible=True)
+    board_widget.show()
+
+    # Structure:
+    # Row 0: 1. e4 (contains expand button)
+    # Row 1: Comment "Best by test."
+    # Row 2: TreeMovesWidget (d4)
+
+    # Verify comment widget
+    # main_layout items:
+    # 0: MoveRowWidget
+    # 1: QLabel (comment)
+    # 2: TreeMovesWidget
+
+    assert board_widget.main_layout.count() >= 3
+
+    comment_item = board_widget.main_layout.itemAt(1)
+    comment_lbl = comment_item.widget()
+    # It might be `MoveRowWidget` is None, thus comment is standalone. Yes.
+
+    # We need to verify it is indeed a QLabel
+    from PySide6.QtWidgets import QLabel
+
+    assert isinstance(comment_lbl, QLabel)
+    assert "Best by test" in comment_lbl.text()
+
+    # Get expand button
+    row_widget = board_widget.main_layout.itemAt(0).widget()
+    assert isinstance(row_widget, MoveRowWidget)
+    lbl_white = row_widget.lbl_white
+    assert isinstance(lbl_white, MoveLabel)
+
+    expand_btn = None
+    for child in lbl_white.findChildren(ExpandButton):
+        expand_btn = child
+        break
+    assert expand_btn is not None
+
+    # Initial state
+    assert expand_btn.is_expanded is True
+    assert comment_lbl.isVisible() is True
+
+    # Collapse
+    event = QMouseEvent(
+        QMouseEvent.Type.MouseButtonPress,
+        QPoint(0, 0),
+        QPoint(0, 0),
+        Qt.MouseButton.LeftButton,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    expand_btn.mousePressEvent(event)
+
+    assert expand_btn.is_expanded is False
+    assert comment_lbl.isVisible() is False
+
+    # Expand
+    expand_btn.mousePressEvent(event)
+
+    assert expand_btn.is_expanded is True
+    assert comment_lbl.isVisible() is True
