@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from typing_extensions import Self
 
 from chess_widgets.flow_layout import FlowLayout
 
@@ -201,6 +202,7 @@ class MoveLabel(QFrame):
     ) -> None:
         super().__init__(parent)
         self.node = node
+        self.start_widget = start_widget
         self.base_style = base_style
         self.is_active = False
         self.is_hovered = False
@@ -307,6 +309,10 @@ class MoveRowWidget(QFrame):
         self.white_node = white_node
         self.black_node = black_node
 
+        # Reference to another row for the black move
+        # if the white and black moves are split
+        self.black_split_row: Optional[Self] = None
+
         self.setLayout(QHBoxLayout())
         layout = cast(QHBoxLayout, self.layout())
         layout.setContentsMargins(0, 0, 0, 0)
@@ -316,12 +322,12 @@ class MoveRowWidget(QFrame):
         self.lbl_number = QLabel(number_text)
         self.lbl_number.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_number.setStyleSheet(STYLE_MOVE_NUMBER)
-        # self.lbl_number.setFixedWidth(50)
 
-        layout.addWidget(self.lbl_number, 13)
+        layout.addWidget(self.lbl_number, stretch=13)
 
         # White Move (43.5%)
         self.lbl_white: QWidget  # Can be MoveLabel (QFrame) or QLabel
+
         if white_node:
             self.lbl_white = MoveLabel(
                 white_node.san(),
@@ -331,28 +337,13 @@ class MoveRowWidget(QFrame):
             )
             self.lbl_white.clicked.connect(self.move_clicked.emit)
         else:
-            self.lbl_white = QLabel("...")
-            self.lbl_white.setStyleSheet(f"color: {COLOR_TEXT_DIM}; padding: 2px 5px;")
+            self.lbl_white = self._make_placeholder()
 
-        # MoveLabel is now a QFrame, assume typical usage.
-        # QLabel has setAlignment, QFrame does not.
-        # We need to align the widget in the layout, not call method on it if
-        # it's not a label.
-        # However, layout.addWidget default behavior stretches.
-        # MoveLabel's internal layout has alignment?
-        # It's cleaner if we don't rely on setAlignment for MoveLabel.
-        # If lbl_white IS a QLabel (placeholder), we set alignment.
-        if isinstance(self.lbl_white, QLabel) and not isinstance(
-            self.lbl_white, MoveLabel
-        ):
-            self.lbl_white.setAlignment(
-                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-            )
-
-        layout.addWidget(self.lbl_white, 43)
+        layout.addWidget(self.lbl_white, stretch=43)
 
         # Black Move (43.5%)
         self.lbl_black: QWidget
+
         if black_node:
             self.lbl_black = MoveLabel(
                 black_node.san(),
@@ -362,20 +353,37 @@ class MoveRowWidget(QFrame):
             )
             self.lbl_black.clicked.connect(self.move_clicked.emit)
         else:
-            self.lbl_black = QLabel("...")
-            self.lbl_black.setStyleSheet(f"color: {COLOR_TEXT_DIM}; padding: 2px 5px;")
+            self.lbl_black = self._make_placeholder()
 
-        if isinstance(self.lbl_black, QLabel) and not isinstance(
-            self.lbl_black, MoveLabel
-        ):
-            self.lbl_black.setAlignment(
-                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-            )
-
-        layout.addWidget(self.lbl_black, 43)
+        layout.addWidget(self.lbl_black, stretch=43)
 
         # Styling
         self.setStyleSheet(STYLE_MOVE_ROW)
+
+    def _make_placeholder(self) -> QLabel:
+        lbl = QLabel("...")
+        lbl.setStyleSheet(f"color: {COLOR_TEXT_DIM}; padding: 2px 5px;")
+        lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        return lbl
+
+    def show_black_split_row(self, is_split: bool) -> None:
+        assert self.black_split_row is not None
+
+        self.black_split_row.setVisible(is_split)
+
+        layout = cast(QHBoxLayout, self.layout())
+        layout.removeWidget(self.lbl_black)
+
+        if is_split:
+            black_layout = cast(QHBoxLayout, self.black_split_row.layout())
+            black_layout.addWidget(self.lbl_black, stretch=43)
+            self.lbl_black = self._make_placeholder()
+        else:
+            self.black_node = self.black_split_row.black_node
+            self.lbl_black.deleteLater()
+            self.lbl_black = self.black_split_row.lbl_black
+
+        layout.addWidget(self.lbl_black, stretch=43)
 
     def set_black_move(
         self, node: chess.pgn.ChildNode, start_widget: Optional[QWidget] = None
@@ -939,6 +947,7 @@ class AnalysisBoardWidget(QScrollArea):
 
         current_node: chess.pgn.ChildNode = game  # type: ignore
         current_row_widget: Optional[MoveRowWidget] = None
+        split_row: bool = False
 
         while current_node.variations:
             # Check for existing sibling variations of the CURRENT line
@@ -960,6 +969,7 @@ class AnalysisBoardWidget(QScrollArea):
                 start_widget = None
                 tree_widget = None
                 expand_btn = None
+                split_row = False
 
                 has_comment = bool(
                     main_next.comment and _filter_comment(main_next.comment)
@@ -991,7 +1001,6 @@ class AnalysisBoardWidget(QScrollArea):
                 )
                 current_row_widget.move_clicked.connect(self.move_clicked.emit)
                 self.main_layout.addWidget(current_row_widget)
-                # Register move labels
                 self._register_move_labels(current_row_widget.get_move_labels())
 
                 # If comment
@@ -1002,8 +1011,8 @@ class AnalysisBoardWidget(QScrollArea):
                         if expand_btn:
                             expand_btn.toggled.connect(comment_lbl.setVisible)
                             comment_lbl.setVisible(expand_btn.is_expanded)
-                        # Close row because annotation breaks flow
-                        current_row_widget = None
+                        # Split the row because annotation breaks flow
+                        split_row = True
 
                 # If there are variations for this White move (siblings of main_next)
                 if variations:
@@ -1015,11 +1024,11 @@ class AnalysisBoardWidget(QScrollArea):
                         )
                         tree_widget.move_clicked.connect(self.move_clicked.emit)
 
-                    current_row_widget = None
                     self.main_layout.addWidget(tree_widget)
-
-                    # Register move labels
                     self._register_move_labels(tree_widget.get_move_labels())
+
+                    # Split the row because variations breaks flow
+                    split_row = True
 
             else:  # Black's turn
                 # Prepare expand button if needed
@@ -1046,11 +1055,14 @@ class AnalysisBoardWidget(QScrollArea):
                         tree_widget.setVisible(expand_btn.is_expanded)
 
                 # Try to append to existing row
-                if current_row_widget and current_row_widget.black_node is None:
+                if (
+                    not split_row
+                    and current_row_widget
+                    and current_row_widget.black_node is None
+                ):
                     current_row_widget.set_black_move(
                         main_next, start_widget=start_widget
                     )
-                    # Register the newly added black move label
                     self._register_move_labels(
                         [
                             lbl
@@ -1059,6 +1071,8 @@ class AnalysisBoardWidget(QScrollArea):
                         ]
                     )
                 else:
+                    previous_row_widget = current_row_widget
+
                     # Create new row with empty white
                     current_row_widget = MoveRowWidget(
                         str(move_number),
@@ -1066,9 +1080,21 @@ class AnalysisBoardWidget(QScrollArea):
                         black_node=main_next,
                         start_widget_black=start_widget,
                     )
+
+                    # Hide this row if the white move is collapsed
+                    if previous_row_widget:
+                        previous_row_widget.black_split_row = current_row_widget
+                        previous_white_lbl = cast(
+                            MoveLabel,
+                            previous_row_widget.lbl_white,
+                        )
+                        if isinstance(previous_white_lbl.start_widget, ExpandButton):
+                            white_expand_btn = previous_white_lbl.start_widget
+                            show_row = previous_row_widget.show_black_split_row
+                            white_expand_btn.toggled.connect(show_row)
+
                     current_row_widget.move_clicked.connect(self.move_clicked.emit)
                     self.main_layout.addWidget(current_row_widget)
-                    # Register move labels
                     self._register_move_labels(current_row_widget.get_move_labels())
 
                 # If comment
@@ -1090,8 +1116,6 @@ class AnalysisBoardWidget(QScrollArea):
                         tree_widget.move_clicked.connect(self.move_clicked.emit)
 
                     self.main_layout.addWidget(tree_widget)
-
-                    # Register move labels
                     self._register_move_labels(tree_widget.get_move_labels())
 
             current_node = main_next
