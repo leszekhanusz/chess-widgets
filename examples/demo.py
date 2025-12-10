@@ -260,17 +260,26 @@ class MainWindow(QMainWindow):
         print(f"{'Interactive Move' if interactive else 'Move'} played: {move}")
 
         if interactive:
-            # If interactive move, we need to handle branching or overwriting
-            # For this simple demo, we'll append to current node
-            # Create a new node
-            new_node = self.current_node.add_variation(move)
-            self.current_node = new_node
+            # Check if move already exists as a variation or main move
+            existing_node = next(
+                (node for node in self.current_node.variations if node.move == move),
+                None,
+            )
 
-            # Sync to analysis widget
-            # We call set_game to refresh the whole view for simplicity
-            # when structure changes
-            self.analysis_widget.set_game(self.game)
-            self.analysis_widget.set_active_node(self.current_node)
+            if existing_node:
+                # Simply traverse to the existing node
+                self.current_node = existing_node
+                self.analysis_widget.set_active_node(self.current_node)
+            else:
+                # Create a new node since it doesn't exist
+                new_node = self.current_node.add_variation(move)
+                self.current_node = new_node
+
+                # Sync to analysis widget
+                # We call set_game to refresh the whole view for simplicity
+                # when structure changes
+                self.analysis_widget.set_game(self.game)
+                self.analysis_widget.set_active_node(self.current_node)
 
         # For programmatic moves (replay), we don't assume we are creating
         # new nodes immediately unless handling a replay loop. But here 'move_played'
