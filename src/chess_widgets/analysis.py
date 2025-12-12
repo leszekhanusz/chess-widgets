@@ -163,9 +163,13 @@ class ExpandButton(QWidget):
         self.is_hovered = False
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
-        self.is_expanded = not self.is_expanded
-        self.toggled.emit(self.is_expanded)
-        self.update()
+        self.set_expanded(not self.is_expanded)
+
+    def set_expanded(self, expanded: bool) -> None:
+        if self.is_expanded != expanded:
+            self.is_expanded = expanded
+            self.toggled.emit(self.is_expanded)
+            self.update()
 
     def enterEvent(self, event: QEnterEvent) -> None:
         self.is_hovered = True
@@ -699,9 +703,13 @@ class ExpandWidget(QWidget):
         self.is_hovered = False
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
-        self.is_expanded = not self.is_expanded
-        self.toggled.emit(self.is_expanded)
-        self.update()
+        self.set_expanded(not self.is_expanded)
+
+    def set_expanded(self, expanded: bool) -> None:
+        if self.is_expanded != expanded:
+            self.is_expanded = expanded
+            self.toggled.emit(self.is_expanded)
+            self.update()
 
     def enterEvent(self, event: QEnterEvent) -> None:
         self.is_hovered = True
@@ -841,6 +849,12 @@ class VariationBranchWidget(QWidget):
             labels.extend(self.sub_tree.get_move_labels())
         return labels
 
+    def collapse(self, collapsed: bool) -> None:
+        if self.expand_btn:
+            self.expand_btn.set_expanded(not collapsed)
+        if self.sub_tree and isinstance(self.sub_tree, TreeMovesWidget):
+            self.sub_tree.collapse(collapsed)
+
 
 class TreeMovesWidget(QWidget):
     move_clicked = Signal(object, object)
@@ -870,6 +884,10 @@ class TreeMovesWidget(QWidget):
         for branch in self.branches:
             labels.extend(branch.get_move_labels())
         return labels
+
+    def collapse(self, collapsed: bool) -> None:
+        for branch in self.branches:
+            branch.collapse(collapsed)
 
 
 class AnalysisBoardWidget(QScrollArea):
@@ -1151,6 +1169,34 @@ class AnalysisBoardWidget(QScrollArea):
         lbl.setStyleSheet(STYLE_ANNOTATION)
         self.main_layout.addWidget(lbl)
         return lbl
+
+    def collapse(self, collapsed: bool) -> None:
+        """Collapse or expand all variations and comments."""
+        for i in range(self.main_layout.count()):
+            item = self.main_layout.itemAt(i)
+            widget = item.widget()
+            if not widget:
+                continue
+
+            if isinstance(widget, MoveRowWidget):
+                # Check for white expand button
+                if (
+                    isinstance(widget.lbl_white, MoveLabel)
+                    and widget.lbl_white.start_widget
+                    and isinstance(widget.lbl_white.start_widget, ExpandButton)
+                ):
+                    widget.lbl_white.start_widget.set_expanded(not collapsed)
+
+                # Check for black expand button
+                if (
+                    isinstance(widget.lbl_black, MoveLabel)
+                    and widget.lbl_black.start_widget
+                    and isinstance(widget.lbl_black.start_widget, ExpandButton)
+                ):
+                    widget.lbl_black.start_widget.set_expanded(not collapsed)
+
+            elif isinstance(widget, TreeMovesWidget):
+                widget.collapse(collapsed)
 
     def set_active_node(self, node: chess.pgn.GameNode) -> None:
         """Set the active node and update the visual highlighting."""

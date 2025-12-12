@@ -7,9 +7,11 @@ from PySide6.QtWidgets import QApplication, QLabel
 
 from chess_widgets.analysis import (
     AnalysisBoardWidget,
+    ExpandButton,
     ExpandWidget,
     InlineMovesWidget,
     MoveLabel,
+    MoveRowWidget,
     VariationBranchWidget,
     _is_linear_branch,
 )
@@ -645,3 +647,60 @@ def test_set_game_and_clear(app: object) -> None:
     assert board_widget.active_node is None
     assert len(board_widget.node_to_label) == 0
     assert board_widget.scrollbar_hovered is False
+
+
+def test_analysis_board_collapse(app: object) -> None:
+    """Test AnalysisBoardWidget collapse method."""
+    import io
+    import textwrap
+
+    # Create a game with variations and comments to trigger expand buttons
+    pgn_text = textwrap.dedent(
+        """
+        [Event "Test"]
+        [Site "Test"]
+        [Date "2023.01.01"]
+        [Round "1"]
+        [White "White"]
+        [Black "Black"]
+        [Result "*"]
+
+        1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 (3... Nf6) 4. Ba4 Nf6 5. O-O
+        (5. d3 d6 6. Bg5 (6. c3) (6. Nbd2)) *
+        """
+    )
+
+    pgn = chess.pgn.read_game(io.StringIO(pgn_text))
+    widget = AnalysisBoardWidget(pgn)
+
+    # Helper to count visible items or expanded buttons
+    def count_expanded_buttons(w: object) -> int:
+        count = 0
+        if isinstance(w, AnalysisBoardWidget):
+            layout = w.main_layout
+            for i in range(layout.count()):
+                item = layout.itemAt(i)
+                if item and item.widget():
+                    count += count_expanded_buttons(item.widget())
+        elif isinstance(w, MoveRowWidget):
+            for lbl in [w.lbl_white, w.lbl_black]:
+                if isinstance(lbl, MoveLabel) and isinstance(
+                    lbl.start_widget, ExpandButton
+                ):
+                    if lbl.start_widget.is_expanded:
+                        count += 1
+        return count
+
+    # Initially expanded
+    initial_expanded = count_expanded_buttons(widget)
+    assert initial_expanded > 0
+
+    # Collapse
+    widget.collapse(True)
+    collapsed_expanded = count_expanded_buttons(widget)
+    assert collapsed_expanded == 0
+
+    # Expand
+    widget.collapse(False)
+    final_expanded = count_expanded_buttons(widget)
+    assert final_expanded == initial_expanded
