@@ -5,7 +5,14 @@ import sys
 import chess.pgn
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QMouseEvent
-from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QMainWindow,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from chess_widgets import AnalysisBoardWidget
 
@@ -28,8 +35,20 @@ def main() -> None:
     layout = QVBoxLayout(central_widget)
     layout.setContentsMargins(0, 0, 0, 0)
 
+    # Control buttons
+    btn_layout = QHBoxLayout()
+    btn_collapse = QPushButton("Collapse All")
+    btn_expand = QPushButton("Expand All")
+
+    btn_layout.addWidget(btn_collapse)
+    btn_layout.addWidget(btn_expand)
+    layout.addLayout(btn_layout)
+
     analysis_widget = AnalysisBoardWidget(game)
     layout.addWidget(analysis_widget)
+
+    btn_collapse.clicked.connect(lambda: analysis_widget.collapse(True))
+    btn_expand.clicked.connect(lambda: analysis_widget.collapse(False))
 
     # Connect signal to set active node
     def on_move_clicked(
