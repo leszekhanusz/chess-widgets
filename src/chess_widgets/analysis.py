@@ -451,6 +451,50 @@ class InlineMovesWidget(QWidget):
             else:
                 self.populate(start_node)
 
+    def add_move_label(
+        self,
+        text: str,
+        *,
+        node: chess.pgn.ChildNode,
+        color: str,
+    ) -> None:
+        lbl = MoveLabel(
+            text,
+            node,
+            f"""
+            QLabel {{
+                color: {color};
+                background-color: transparent;
+                border-radius: 3px;
+                padding: 1px 3px;
+            }}
+        """,
+        )
+        lbl.clicked.connect(self.move_clicked.emit)
+        lbl.hovered.connect(self.move_hovered.emit)
+        self.content_layout.addWidget(lbl)
+
+    def add_comment(
+        self,
+        comment: str,
+        *,
+        color: str,
+    ) -> None:
+        comment_lbl = QLabel(comment)
+        comment_lbl.setWordWrap(True)
+        comment_lbl.setStyleSheet(f"color: {color}; font-style: italic;")
+        self.content_layout.addWidget(comment_lbl)
+
+    def add_filtered_comment(
+        self,
+        comment: str,
+        *,
+        color: str,
+    ) -> None:
+        filtered_comment = _filter_comment(comment)
+        if filtered_comment:
+            self.add_comment(filtered_comment, color=color)
+
     def populate(self, node: chess.pgn.ChildNode) -> None:
         current: Optional[chess.pgn.ChildNode] = node
         while current:
@@ -466,32 +510,12 @@ class InlineMovesWidget(QWidget):
                 )
                 move_text = f"{move_number}{move_text}"
 
-            lbl = MoveLabel(
-                move_text,
-                current,
-                f"""
-                QLabel {{
-                    color: {COLOR_TEXT};
-                    background-color: transparent;
-                    border-radius: 3px;
-                    padding: 1px 3px;
-                }}
-            """,
-            )
-            lbl.clicked.connect(self.move_clicked.emit)
-            lbl.hovered.connect(self.move_hovered.emit)
-            self.content_layout.addWidget(lbl)
+            # Add the MoveLabel
+            self.add_move_label(text=move_text, node=current, color=COLOR_TEXT)
 
             # Add comment if any
             if current.comment:
-                filtered_comment = _filter_comment(current.comment)
-                if filtered_comment:
-                    comment_lbl = QLabel(filtered_comment)
-                    comment_lbl.setWordWrap(True)
-                    comment_lbl.setStyleSheet(
-                        f"color: {COLOR_TEXT_DIM}; font-style: italic;"
-                    )
-                    self.content_layout.addWidget(comment_lbl)
+                self.add_filtered_comment(current.comment, color=COLOR_TEXT_DIM)
 
             # Handle siblings of the CURRENT node (alternatives to this move)
             # We only do this if we are not at the start node
@@ -533,32 +557,12 @@ class InlineMovesWidget(QWidget):
                 )
                 move_text = f"{move_number}{move_text}"
 
-            lbl = MoveLabel(
-                move_text,
-                current,
-                f"""
-                QLabel {{
-                    color: {COLOR_TEXT};
-                    background-color: transparent;
-                    border-radius: 3px;
-                    padding: 1px 3px;
-                }}
-            """,
-            )
-            lbl.clicked.connect(self.move_clicked.emit)
-            lbl.hovered.connect(self.move_hovered.emit)
-            self.content_layout.addWidget(lbl)
+            # Add the MoveLabel
+            self.add_move_label(node=current, text=move_text, color=COLOR_TEXT)
 
             # Add comment if any
             if current.comment:
-                filtered_comment = _filter_comment(current.comment)
-                if filtered_comment:
-                    comment_lbl = QLabel(filtered_comment)
-                    comment_lbl.setWordWrap(True)
-                    comment_lbl.setStyleSheet(
-                        f"color: {COLOR_TEXT_DIM}; font-style: italic;"
-                    )
-                    self.content_layout.addWidget(comment_lbl)
+                self.add_filtered_comment(current.comment, color=COLOR_TEXT_DIM)
 
             # 2. Render siblings (alternatives to THIS move)
             # We only do this if we are not at the start node
@@ -622,31 +626,12 @@ class InlineMovesWidget(QWidget):
                 )
                 move_text = f"{move_number}{move_text}"
 
-            lbl = MoveLabel(
-                move_text,
-                current,
-                f"""
-                QLabel {{
-                    color: {COLOR_TEXT_DIM};
-                    background-color: transparent;
-                    border-radius: 3px;
-                }}
-                """,
-            )
-            lbl.clicked.connect(self.move_clicked.emit)
-            lbl.hovered.connect(self.move_hovered.emit)
-            self.content_layout.addWidget(lbl)
+            # Add the MoveLabel
+            self.add_move_label(node=current, text=move_text, color=COLOR_TEXT_DIM)
 
             # Add comment if any
             if current.comment:
-                filtered_comment = _filter_comment(current.comment)
-                if filtered_comment:
-                    comment_lbl = QLabel(filtered_comment)
-                    comment_lbl.setWordWrap(True)
-                    comment_lbl.setStyleSheet(
-                        f"color: {COLOR_TEXT_DIM}; font-style: italic;"
-                    )
-                    self.content_layout.addWidget(comment_lbl)
+                self.add_filtered_comment(current.comment, color=COLOR_TEXT_DIM)
 
             if current.variations:
                 current = current.variations[0]
