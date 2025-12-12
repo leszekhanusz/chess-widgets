@@ -115,22 +115,26 @@ def test_move_label_events(app: object) -> None:
     # Test click emission
     # Mock emission
     emitted_node = None
+    emitted_event = "not_set"
 
-    def on_click(n):
-        nonlocal emitted_node
+    def on_click(n, event):
+        nonlocal emitted_node, emitted_event
         emitted_node = n
+        emitted_event = event
 
     label.clicked.connect(on_click)
 
     # Click when inactive -> should emit
     label.mousePressEvent(None)
     assert emitted_node == node
+    assert emitted_event is None
 
-    # Click when active -> should NOT emit (according to code)
+    # Click when active -> should emit too
     emitted_node = None
+    emitted_event = "not_set"
     label.set_active(True)
     label.mousePressEvent(None)
-    assert emitted_node is None
+    assert emitted_node == node
 
 
 def test_inline_moves_populate_complex(app: object) -> None:

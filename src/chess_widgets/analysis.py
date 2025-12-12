@@ -189,7 +189,7 @@ class ExpandButton(QWidget):
 
 
 class MoveLabel(QFrame):
-    clicked = Signal(object)  # Emits the node
+    clicked = Signal(object, object)  # Emits (node, event)
     hovered = Signal(object)  # Emits the node when hovered, None when unhovered
 
     def __init__(
@@ -230,8 +230,7 @@ class MoveLabel(QFrame):
         self.label.setText(text)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
-        if not self.is_active:
-            self.clicked.emit(self.node)
+        self.clicked.emit(self.node, event)
 
     def enterEvent(self, event: QEnterEvent) -> None:
         """Handle mouse enter - apply hover styling."""
@@ -294,7 +293,7 @@ class MoveLabel(QFrame):
 
 
 class MoveRowWidget(QFrame):
-    move_clicked = Signal(object)
+    move_clicked = Signal(object, object)
     move_hovered = Signal(object)
 
     def __init__(
@@ -414,7 +413,7 @@ class MoveRowWidget(QFrame):
 
 
 class InlineMovesWidget(QWidget):
-    move_clicked = Signal(object)
+    move_clicked = Signal(object, object)
     move_hovered = Signal(object)
     # Signal emitted when we hit a complex branching point,
     # passing the node that has the branches
@@ -743,7 +742,7 @@ class ExpandWidget(QWidget):
 
 
 class VariationBranchWidget(QWidget):
-    move_clicked = Signal(object)
+    move_clicked = Signal(object, object)
     move_hovered = Signal(object)
 
     def __init__(
@@ -844,7 +843,7 @@ class VariationBranchWidget(QWidget):
 
 
 class TreeMovesWidget(QWidget):
-    move_clicked = Signal(object)
+    move_clicked = Signal(object, object)
     move_hovered = Signal(object)
 
     def __init__(
@@ -874,7 +873,7 @@ class TreeMovesWidget(QWidget):
 
 
 class AnalysisBoardWidget(QScrollArea):
-    move_clicked = Signal(object)
+    move_clicked = Signal(object, object)
     move_hovered = Signal(object)  # Emits node when hovered, None when unhovered
 
     def __init__(
@@ -1186,12 +1185,12 @@ class AnalysisBoardWidget(QScrollArea):
     def prev_move(self) -> None:
         if self.active_node and self.active_node.parent:
             self.set_active_node(self.active_node.parent)
-            self.move_clicked.emit(self.active_node)
+            self.move_clicked.emit(self.active_node, None)
 
     def next_move(self) -> None:
         if self.active_node and len(self.active_node.variations) > 0:
             self.set_active_node(self.active_node.variations[0])
-            self.move_clicked.emit(self.active_node)
+            self.move_clicked.emit(self.active_node, None)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key.Key_Left:

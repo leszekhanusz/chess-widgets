@@ -3,6 +3,8 @@ import signal
 import sys
 
 import chess.pgn
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 
 from chess_widgets import AnalysisBoardWidget
@@ -30,9 +32,17 @@ def main() -> None:
     layout.addWidget(analysis_widget)
 
     # Connect signal to set active node
-    def on_move_clicked(node: chess.pgn.ChildNode) -> None:
-        analysis_widget.set_active_node(node)
-        print(f"Clicked: {node.san()}")
+    def on_move_clicked(
+        node: chess.pgn.ChildNode, event: QMouseEvent | None = None
+    ) -> None:
+        click_type = "Clicked"
+        if event:
+            if event.button() == Qt.MouseButton.LeftButton:
+                analysis_widget.set_active_node(node)
+                click_type = "Left clicked"
+            elif event.button() == Qt.MouseButton.RightButton:
+                click_type = "Right clicked"
+        print(f"{click_type}: {node.san()}")
 
     analysis_widget.move_clicked.connect(on_move_clicked)
 
