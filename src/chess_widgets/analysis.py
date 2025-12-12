@@ -35,7 +35,6 @@ COLOR_TEXT = "#4D4D4D"
 COLOR_TEXT_DIM = "#888888"
 COLOR_TEXT_NUMBER = "#A0A0A0"
 COLOR_HIGHLIGHT = "#1b78d0"
-# COLOR_BORDER_LIGHT = "#4D4D4D1F"
 COLOR_BORDER_LIGHT = "#E2E1E0"
 COLOR_BORDER = "#D9D9D9"
 COLOR_VARIATION_BAR = "#E0E0E0"
@@ -407,7 +406,8 @@ class MoveRowWidget(QFrame):
         self.lbl_black.hovered.connect(self.move_hovered.emit)
         layout.addWidget(self.lbl_black, 43)
 
-    def get_move_labels(self) -> list[MoveLabel]:
+    @property
+    def move_labels(self) -> list[MoveLabel]:
         labels = []
         if isinstance(self.lbl_white, MoveLabel):
             labels.append(self.lbl_white)
@@ -432,6 +432,7 @@ class InlineMovesWidget(QWidget):
     ) -> None:
         super().__init__(parent)
         self.stop_on_complex_branch = stop_on_complex_branch
+        self.move_labels: list[MoveLabel] = []
 
         # Container for flow content
         self.content_widget = QWidget()
@@ -458,7 +459,7 @@ class InlineMovesWidget(QWidget):
         node: chess.pgn.ChildNode,
         color: str,
     ) -> None:
-        lbl = MoveLabel(
+        move_label = MoveLabel(
             text,
             node,
             f"""
@@ -470,9 +471,10 @@ class InlineMovesWidget(QWidget):
             }}
         """,
         )
-        lbl.clicked.connect(self.move_clicked.emit)
-        lbl.hovered.connect(self.move_hovered.emit)
-        self.content_layout.addWidget(lbl)
+        move_label.clicked.connect(self.move_clicked.emit)
+        move_label.hovered.connect(self.move_hovered.emit)
+        self.content_layout.addWidget(move_label)
+        self.move_labels.append(move_label)
 
     def add_comment(
         self,
@@ -638,37 +640,13 @@ class InlineMovesWidget(QWidget):
             else:
                 current = None
 
-    def get_move_labels(self) -> list[MoveLabel]:
-        labels = []
-        # Iterate over the layout items to find MoveLabels
-        for child in self.content_widget.children():
-            if isinstance(child, MoveLabel):
-                labels.append(child)
-        return labels
-
     def set_collapsed(self, collapsed: bool) -> None:
         """
         If collapsed is True, show only the first move label and hide everything else.
         If collapsed is False, show everything.
         """
-        first_move_found = False
-
-        # We iterate over the layout items.
-        # FlowLayout items are reachable via count() and itemAt().
-        # However, calling child.setVisible() on widgets is usually enough if they
-        # are in the layout.
-
-        # Let's iterate over the children of content_widget directly
-        for child in self.content_widget.findChildren(
-            QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly
-        ):
-            if isinstance(child, MoveLabel) and not first_move_found:
-                # This is the first move
-                child.setVisible(True)
-                first_move_found = True
-            else:
-                # Everything else (comments, parens, subsequent moves)
-                child.setVisible(not collapsed)
+        for move_label in self.move_labels[1:]:
+            move_label.setVisible(not collapsed)
 
 
 class ExpandWidget(QWidget):
@@ -828,10 +806,11 @@ class VariationBranchWidget(QWidget):
         # Determine collapsed state for inline widget (inverse of expanded)
         self.inline_widget.set_collapsed(not is_expanded)
 
-    def get_move_labels(self) -> list[MoveLabel]:
-        labels = self.inline_widget.get_move_labels()
+    @property
+    def move_labels(self) -> list[MoveLabel]:
+        labels = self.inline_widget.move_labels.copy()
         if self.sub_tree and isinstance(self.sub_tree, TreeMovesWidget):
-            labels.extend(self.sub_tree.get_move_labels())
+            labels.extend(self.sub_tree.move_labels)
         return labels
 
     def collapse(self, collapsed: bool) -> None:
@@ -864,10 +843,11 @@ class TreeMovesWidget(QWidget):
             self.main_layout.addWidget(branch)
             self.branches.append(branch)
 
-    def get_move_labels(self) -> list[MoveLabel]:
+    @property
+    def move_labels(self) -> list[MoveLabel]:
         labels = []
         for branch in self.branches:
-            labels.extend(branch.get_move_labels())
+            labels.extend(branch.move_labels)
         return labels
 
     def collapse(self, collapsed: bool) -> None:
@@ -1017,7 +997,7 @@ class AnalysisBoardWidget(QScrollArea):
                 current_row_widget.move_clicked.connect(self.move_clicked.emit)
                 current_row_widget.move_hovered.connect(self.move_hovered.emit)
                 self.main_layout.addWidget(current_row_widget)
-                self._register_move_labels(current_row_widget.get_move_labels())
+                self._register_move_labels(current_row_widget.move_labels)
 
                 # If comment
                 if main_next.comment:
@@ -1042,7 +1022,7 @@ class AnalysisBoardWidget(QScrollArea):
                         tree_widget.move_hovered.connect(self.move_hovered.emit)
 
                     self.main_layout.addWidget(tree_widget)
-                    self._register_move_labels(tree_widget.get_move_labels())
+                    self._register_move_labels(tree_widget.move_labels)
 
                     # Split the row because variations breaks flow
                     split_row = True
@@ -1084,7 +1064,7 @@ class AnalysisBoardWidget(QScrollArea):
                     self._register_move_labels(
                         [
                             lbl
-                            for lbl in current_row_widget.get_move_labels()
+                            for lbl in current_row_widget.move_labels
                             if lbl.node == main_next
                         ]
                     )
@@ -1114,7 +1094,7 @@ class AnalysisBoardWidget(QScrollArea):
                     current_row_widget.move_clicked.connect(self.move_clicked.emit)
                     current_row_widget.move_hovered.connect(self.move_hovered.emit)
                     self.main_layout.addWidget(current_row_widget)
-                    self._register_move_labels(current_row_widget.get_move_labels())
+                    self._register_move_labels(current_row_widget.move_labels)
 
                 # If comment
                 if main_next.comment:
@@ -1136,7 +1116,7 @@ class AnalysisBoardWidget(QScrollArea):
                         tree_widget.move_hovered.connect(self.move_hovered.emit)
 
                     self.main_layout.addWidget(tree_widget)
-                    self._register_move_labels(tree_widget.get_move_labels())
+                    self._register_move_labels(tree_widget.move_labels)
 
             current_node = main_next
 
@@ -1146,7 +1126,6 @@ class AnalysisBoardWidget(QScrollArea):
         """Register move labels and connect their signals."""
         for lbl in labels:
             self.node_to_label[lbl.node] = lbl
-            # moved to widget signals
 
     def add_annotation(self, text: str) -> QLabel:
         lbl = QLabel(text)

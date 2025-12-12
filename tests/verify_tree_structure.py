@@ -23,7 +23,7 @@ def print_widget_tree(widget: QWidget, indent: int = 0) -> None:
         info = f"[{white} {black}]"
     elif isinstance(widget, InlineMovesWidget):
         # Count moves
-        moves = [lbl.text() for lbl in widget.get_move_labels()]
+        moves = [lbl.text() for lbl in widget.move_labels]
         info = f"Moves: {len(moves)} " + (f"({moves[0]}...)" if moves else "")
     elif isinstance(widget, VariationBranchWidget):
         info = f"Start: {widget.start_node.san()}"

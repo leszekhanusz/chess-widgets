@@ -165,7 +165,7 @@ def test_inline_moves_populate_complex(app: object) -> None:
     widget = InlineMovesWidget(e4)  # Start at e4
 
     # Verify labels
-    labels = widget.get_move_labels()
+    labels = widget.move_labels
     # Should have e4... but wait, start_node is e4.
     # populate(node) starts iterating `current = node`.
     # So it renders e4 first.
@@ -270,7 +270,7 @@ def test_variation_branch_and_tree(app: object) -> None:
     assert branch_widget.sub_tree.isVisible() is True
 
     # Check move labels
-    labels = branch_widget.get_move_labels()
+    labels = branch_widget.move_labels
     texts = [label.text() for label in labels]
     assert any("e5" in t for t in texts)
     assert any("Nf3" in t for t in texts)
@@ -352,7 +352,7 @@ def test_inline_moves_collapsed(app: object) -> None:
     # Check visibility of children.
     # e4 is first move. e5 is second.
     # We can check specific move labels
-    labels = widget.get_move_labels()
+    labels = widget.move_labels
     assert len(labels) == 2
 
     # Collapse
