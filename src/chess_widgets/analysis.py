@@ -295,6 +295,7 @@ class MoveLabel(QFrame):
 
 class MoveRowWidget(QFrame):
     move_clicked = Signal(object)
+    move_hovered = Signal(object)
 
     def __init__(
         self,
@@ -336,6 +337,7 @@ class MoveRowWidget(QFrame):
                 start_widget=start_widget_white,
             )
             self.lbl_white.clicked.connect(self.move_clicked.emit)
+            self.lbl_white.hovered.connect(self.move_hovered.emit)
         else:
             self.lbl_white = self._make_placeholder()
 
@@ -352,6 +354,7 @@ class MoveRowWidget(QFrame):
                 start_widget=start_widget_black,
             )
             self.lbl_black.clicked.connect(self.move_clicked.emit)
+            self.lbl_black.hovered.connect(self.move_hovered.emit)
         else:
             self.lbl_black = self._make_placeholder()
 
@@ -398,6 +401,7 @@ class MoveRowWidget(QFrame):
             node.san(), node, STYLE_MOVE_LABEL, start_widget=start_widget
         )
         self.lbl_black.clicked.connect(self.move_clicked.emit)
+        self.lbl_black.hovered.connect(self.move_hovered.emit)
         layout.addWidget(self.lbl_black, 43)
 
     def get_move_labels(self) -> list[MoveLabel]:
@@ -411,6 +415,7 @@ class MoveRowWidget(QFrame):
 
 class InlineMovesWidget(QWidget):
     move_clicked = Signal(object)
+    move_hovered = Signal(object)
     # Signal emitted when we hit a complex branching point,
     # passing the node that has the branches
     branch_encountered = Signal(object)
@@ -471,6 +476,7 @@ class InlineMovesWidget(QWidget):
             """,
             )
             lbl.clicked.connect(self.move_clicked.emit)
+            lbl.hovered.connect(self.move_hovered.emit)
             self.content_layout.addWidget(lbl)
 
             # Add comment if any
@@ -537,6 +543,7 @@ class InlineMovesWidget(QWidget):
             """,
             )
             lbl.clicked.connect(self.move_clicked.emit)
+            lbl.hovered.connect(self.move_hovered.emit)
             self.content_layout.addWidget(lbl)
 
             # Add comment if any
@@ -624,6 +631,7 @@ class InlineMovesWidget(QWidget):
                 """,
             )
             lbl.clicked.connect(self.move_clicked.emit)
+            lbl.hovered.connect(self.move_hovered.emit)
             self.content_layout.addWidget(lbl)
 
             # Add comment if any
@@ -736,6 +744,7 @@ class ExpandWidget(QWidget):
 
 class VariationBranchWidget(QWidget):
     move_clicked = Signal(object)
+    move_hovered = Signal(object)
 
     def __init__(
         self,
@@ -785,6 +794,7 @@ class VariationBranchWidget(QWidget):
             start_node, stop_on_complex_branch=True, defer_populate=True
         )
         self.inline_widget.move_clicked.connect(self.move_clicked.emit)
+        self.inline_widget.move_hovered.connect(self.move_hovered.emit)
         self.inline_widget.branch_encountered.connect(self.on_branch_encountered)
 
         self.header_layout.addWidget(self.inline_widget)
@@ -809,6 +819,7 @@ class VariationBranchWidget(QWidget):
         # Here we have multiple variations from `node`.
         self.sub_tree = TreeMovesWidget(node.variations, collapsible=self.collapsible)
         self.sub_tree.move_clicked.connect(self.move_clicked.emit)
+        self.sub_tree.move_hovered.connect(self.move_hovered.emit)
 
         self.content_layout.addWidget(self.sub_tree)
 
@@ -834,6 +845,7 @@ class VariationBranchWidget(QWidget):
 
 class TreeMovesWidget(QWidget):
     move_clicked = Signal(object)
+    move_hovered = Signal(object)
 
     def __init__(
         self,
@@ -850,6 +862,7 @@ class TreeMovesWidget(QWidget):
         for node in variation_nodes:
             branch = VariationBranchWidget(node, collapsible=collapsible)
             branch.move_clicked.connect(self.move_clicked.emit)
+            branch.move_hovered.connect(self.move_hovered.emit)
             self.main_layout.addWidget(branch)
             self.branches.append(branch)
 
@@ -985,6 +998,7 @@ class AnalysisBoardWidget(QScrollArea):
                             variations, collapsible=self.collapsible
                         )
                         tree_widget.move_clicked.connect(self.move_clicked.emit)
+                        tree_widget.move_hovered.connect(self.move_hovered.emit)
 
                         # Connect toggle
                         expand_btn.toggled.connect(tree_widget.setVisible)
@@ -999,6 +1013,7 @@ class AnalysisBoardWidget(QScrollArea):
                     start_widget_white=start_widget,
                 )
                 current_row_widget.move_clicked.connect(self.move_clicked.emit)
+                current_row_widget.move_hovered.connect(self.move_hovered.emit)
                 self.main_layout.addWidget(current_row_widget)
                 self._register_move_labels(current_row_widget.get_move_labels())
 
@@ -1022,6 +1037,7 @@ class AnalysisBoardWidget(QScrollArea):
                             variations, collapsible=self.collapsible
                         )
                         tree_widget.move_clicked.connect(self.move_clicked.emit)
+                        tree_widget.move_hovered.connect(self.move_hovered.emit)
 
                     self.main_layout.addWidget(tree_widget)
                     self._register_move_labels(tree_widget.get_move_labels())
@@ -1049,6 +1065,7 @@ class AnalysisBoardWidget(QScrollArea):
                             variations, collapsible=self.collapsible
                         )
                         tree_widget.move_clicked.connect(self.move_clicked.emit)
+                        tree_widget.move_hovered.connect(self.move_hovered.emit)
 
                         expand_btn.toggled.connect(tree_widget.setVisible)
                         tree_widget.setVisible(expand_btn.is_expanded)
@@ -1093,6 +1110,7 @@ class AnalysisBoardWidget(QScrollArea):
                             white_expand_btn.toggled.connect(show_row)
 
                     current_row_widget.move_clicked.connect(self.move_clicked.emit)
+                    current_row_widget.move_hovered.connect(self.move_hovered.emit)
                     self.main_layout.addWidget(current_row_widget)
                     self._register_move_labels(current_row_widget.get_move_labels())
 
@@ -1113,6 +1131,7 @@ class AnalysisBoardWidget(QScrollArea):
                             variations, collapsible=self.collapsible
                         )
                         tree_widget.move_clicked.connect(self.move_clicked.emit)
+                        tree_widget.move_hovered.connect(self.move_hovered.emit)
 
                     self.main_layout.addWidget(tree_widget)
                     self._register_move_labels(tree_widget.get_move_labels())
@@ -1125,7 +1144,7 @@ class AnalysisBoardWidget(QScrollArea):
         """Register move labels and connect their signals."""
         for lbl in labels:
             self.node_to_label[lbl.node] = lbl
-            lbl.hovered.connect(self.move_hovered.emit)
+            # moved to widget signals
 
     def add_annotation(self, text: str) -> QLabel:
         lbl = QLabel(text)
