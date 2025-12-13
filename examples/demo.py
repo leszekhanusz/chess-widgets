@@ -305,6 +305,34 @@ class MainWindow(QMainWindow):
         self.check_opponent_move()
         self.update_buttons()
 
+    def on_analysis_move_right_clicked(
+        self, node: chess.pgn.ChildNode, event: Any = None
+    ) -> None:
+        # Show popup for move
+        # Construct text as in PGN: "1." or "1..."
+        # Using logic from AnalysisBoardWidget...
+        is_white_move = node.parent.board().turn == chess.WHITE
+        number_text = str(node.parent.board().fullmove_number)
+        if is_white_move:
+            number_text += "."
+        else:
+            number_text += "..."
+
+        popup_title = f"{number_text} {node.san()}"
+        popup = PopupMenu(parent=self, font=self.icon_font, title=popup_title)
+
+        popup.add_item(
+            "Collapse All",
+            "\ue02e",
+            lambda: self.analysis_widget.collapse(True),
+        )
+        popup.add_item(
+            "Expand All", "\ue02d", lambda: self.analysis_widget.collapse(False)
+        )
+        popup.add_item("Delete from here", "\ue04f", lambda: print("Delete from here"))
+
+        popup.show_at_cursor()
+
     def on_analysis_move_clicked(
         self, node: chess.pgn.ChildNode, event: Any = None
     ) -> None:
@@ -312,32 +340,7 @@ class MainWindow(QMainWindow):
         if event and event.type() == QEvent.Type.MouseButtonPress:
             mouse_event = cast(QMouseEvent, event)
             if mouse_event.button() == Qt.MouseButton.RightButton:
-                # Show popup for move
-                # Construct text as in PGN: "1." or "1..."
-                # Using logic from AnalysisBoardWidget...
-                is_white_move = node.parent.board().turn == chess.WHITE
-                number_text = str(node.parent.board().fullmove_number)
-                if is_white_move:
-                    number_text += "."
-                else:
-                    number_text += "..."
-
-                popup_title = f"{number_text} {node.san()}"
-                popup = PopupMenu(parent=self, font=self.icon_font, title=popup_title)
-
-                popup.add_item(
-                    "Collapse All",
-                    "\ue02e",
-                    lambda: self.analysis_widget.collapse(True),
-                )
-                popup.add_item(
-                    "Expand All", "\ue02d", lambda: self.analysis_widget.collapse(False)
-                )
-                popup.add_item(
-                    "Delete from here", "\ue04f", lambda: print("Delete from here")
-                )
-
-                popup.show_at_cursor()
+                self.on_analysis_move_right_clicked(node, event)
                 return
 
         # Update board to this position
