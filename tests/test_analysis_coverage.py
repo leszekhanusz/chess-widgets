@@ -704,3 +704,57 @@ def test_analysis_board_collapse(app: object) -> None:
     widget.collapse(False)
     final_expanded = count_expanded_buttons(widget)
     assert final_expanded == initial_expanded
+
+
+def test_analysis_board_background_click(app: object) -> None:
+    """Test background_clicked signal in AnalysisBoardWidget."""
+    from PySide6.QtGui import QMouseEvent
+    from PySide6.QtWidgets import QWidget
+
+    board = AnalysisBoardWidget()
+    board.show()
+
+    clicked_events = []
+    board.background_clicked.connect(lambda e: clicked_events.append(e))
+
+    # Simulate click on container
+    # container is board.container (checked in eventFilter)
+    container = board.container
+
+    # Create MouseEvent
+    event = QMouseEvent(
+        QEvent.Type.MouseButtonPress,
+        QPoint(10, 10),
+        Qt.MouseButton.RightButton,
+        Qt.MouseButton.RightButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+
+    # Send event to container
+    # We can use QApplication.sendEvent or manually call eventFilter if installed.
+    # eventFilter is installed on container, so sending event to container triggers it.
+    QApplication.sendEvent(container, event)
+
+    assert len(clicked_events) == 1
+    assert clicked_events[0].type() == QEvent.Type.MouseButtonPress
+
+    # Verify safeguard: Call eventFilter without container attribute
+    # We need a fresh instance or modify this one
+    # But verifying hasattr check is tricky if we don't want to break the instance.
+    # We can fake it by calling eventFilter with a dummy object that IS the container
+    # but theoretically 'self.container' is missing from 'self'.
+    # e.g.
+    del board.container
+    # Now call eventFilter manually
+    # board.eventFilter(obj, event)
+    # obj must be the "container" but board.container is gone.
+    # So obj == board.container will throw AttributeError if we access board.container
+    # BUT the code checks `hasattr(self, 'container')` first.
+    # So it should be safe.
+
+    dummy_obj = QWidget()  # Just an object
+    # The condition is: hasattr(self, "container") and obj == self.container
+    # If container is deleted, hasattr returns False.
+    # So it shouldn't crash.
+    board.eventFilter(dummy_obj, event)
+    # Passed if no error.

@@ -2,12 +2,19 @@ import os
 import random
 import signal
 import sys
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 import chess
 import chess.pgn
-from PySide6.QtCore import QPoint, Qt, QTimer
-from PySide6.QtGui import QCursor, QFont, QFontDatabase, QResizeEvent, QWheelEvent
+from PySide6.QtCore import QEvent, QPoint, Qt, QTimer
+from PySide6.QtGui import (
+    QCursor,
+    QFont,
+    QFontDatabase,
+    QMouseEvent,
+    QResizeEvent,
+    QWheelEvent,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -19,6 +26,7 @@ from PySide6.QtWidgets import (
 )
 
 from chess_widgets import AnalysisBoardWidget, BoardWidget
+from chess_widgets.popup import PopupMenu
 
 
 class MainWindow(QMainWindow):
@@ -139,6 +147,7 @@ class MainWindow(QMainWindow):
 
         analysis_widget.move_clicked.connect(self.on_analysis_move_clicked)
         analysis_widget.move_hovered.connect(self.on_analysis_move_hovered)
+        analysis_widget.background_clicked.connect(self.on_analysis_background_clicked)
 
         return analysis_widget
 
@@ -296,8 +305,41 @@ class MainWindow(QMainWindow):
         self.check_opponent_move()
         self.update_buttons()
 
-    def on_analysis_move_clicked(self, node: chess.pgn.ChildNode) -> None:
+    def on_analysis_move_clicked(
+        self, node: chess.pgn.ChildNode, event: Any = None
+    ) -> None:
         """Handle click on move in analysis widget."""
+        if event and event.type() == QEvent.Type.MouseButtonPress:
+            mouse_event = cast(QMouseEvent, event)
+            if mouse_event.button() == Qt.MouseButton.RightButton:
+                # Show popup for move
+                # Construct text as in PGN: "1." or "1..."
+                # Using logic from AnalysisBoardWidget...
+                is_white_move = node.parent.board().turn == chess.WHITE
+                number_text = str(node.parent.board().fullmove_number)
+                if is_white_move:
+                    number_text += "."
+                else:
+                    number_text += "..."
+
+                popup_title = f"{number_text} {node.san()}"
+                popup = PopupMenu(parent=self, font=self.icon_font, title=popup_title)
+
+                popup.add_item(
+                    "Collapse All",
+                    "\ue02e",
+                    lambda: self.analysis_widget.collapse(True),
+                )
+                popup.add_item(
+                    "Expand All", "\ue02d", lambda: self.analysis_widget.collapse(False)
+                )
+                popup.add_item(
+                    "Delete from here", "\ue04f", lambda: print("Delete from here")
+                )
+
+                popup.show_at_cursor()
+                return
+
         # Update board to this position
         self.board_widget.set_board(node.board())
         self.current_node = node
@@ -306,6 +348,18 @@ class MainWindow(QMainWindow):
         # Also need to check if we should trigger opponent move? Maybe not on review.
 
         self.update_buttons()
+
+    def on_analysis_background_clicked(self, event: Any) -> None:
+        mouse_event = cast(QMouseEvent, event)
+        if mouse_event.button() == Qt.MouseButton.RightButton:
+            popup = PopupMenu(parent=self, font=self.icon_font)
+            popup.add_item(
+                "Collapse All", "\ue02e", lambda: self.analysis_widget.collapse(True)
+            )
+            popup.add_item(
+                "Expand All", "\ue02d", lambda: self.analysis_widget.collapse(False)
+            )
+            popup.show_at_cursor()
 
     def on_analysis_move_hovered(self, node: chess.pgn.ChildNode | None) -> None:
         """Handle hover on move in analysis widget."""

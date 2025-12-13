@@ -858,6 +858,7 @@ class TreeMovesWidget(QWidget):
 class AnalysisBoardWidget(QScrollArea):
     move_clicked = Signal(object, object)
     move_hovered = Signal(object)  # Emits node when hovered, None when unhovered
+    background_clicked = Signal(object)
 
     def __init__(
         self,
@@ -899,6 +900,7 @@ class AnalysisBoardWidget(QScrollArea):
         self.main_layout = QVBoxLayout(self.container)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
+        self.container.installEventFilter(self)
 
         self.setWidget(self.container)
 
@@ -1246,6 +1248,14 @@ class AnalysisBoardWidget(QScrollArea):
             elif event.type() == QEvent.Type.Leave:
                 self.scrollbar_hovered = False
                 self._update_scrollbar_style()
+
+        if (
+            hasattr(self, "container")
+            and obj == self.container
+            and event.type() == QEvent.Type.MouseButtonPress
+        ):
+            self.background_clicked.emit(event)
+
         return bool(super().eventFilter(obj, event))
 
     def _clear_all_hover_states(self) -> None:
